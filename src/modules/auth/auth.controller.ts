@@ -2,11 +2,11 @@ import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GoogleAuthGuard } from 'src/guard/google/google.guard';
 import { AuthService } from './auth.service';
+import { DiscordGuard } from 'src/guard/discord/discord.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-
   constructor(private readonly authService: AuthService) {}
 
   // /api/auth/google/login
@@ -14,7 +14,7 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Iniciar sesion con google' })
   async googleLogin() {
-    return
+    return;
   }
 
   // /api/auth/google/redirect
@@ -24,7 +24,7 @@ export class AuthController {
     summary: 'Redirige al usuario a Google para iniciar sesión (OAuth2)',
   })
   async googleRedirect(@Req() req) {
-    return req.user
+    return req.user;
   }
 
   // /api/auth/google/profile
@@ -41,5 +41,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Cerrar sesion de google' })
   googleLogOut() {
     return 'Hasta pronto...';
+  }
+
+  // /api/auth/discord/redirect
+  @Get('discord/login')
+  @UseGuards(DiscordGuard)
+  @ApiOperation({ summary: 'Iniciar sesion con discord' })
+  async discordLogin() {
+    return;
+  }
+
+  @Get('discord/redirect')
+  @UseGuards(DiscordGuard)
+  async discordRedirect(@Req() req) {
+    return this.authService.discordLogin(req);
   }
 }

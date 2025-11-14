@@ -3,10 +3,11 @@ import { AuthController } from './auth.controller';
 import { GoogleStrategy } from 'src/strategies/google.strategy';
 import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
+import { DiscordStrategy } from 'src/strategies/discord.strategy';
 
 @Module({
   imports: [PassportModule],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy]
+  providers: [AuthService, GoogleStrategy, DiscordStrategy]
 })
 export class AuthModule {}
