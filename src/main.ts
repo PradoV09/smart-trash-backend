@@ -5,16 +5,26 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configervice = app.get(ConfigService) // Obtiene una instancia del servicio de configuración de NestJS
-    const options = new DocumentBuilder()
-  .setTitle('smart-trash-backend')
-  .setDescription('smart-trash-backend DOC')
-  .setVersion('1.0')
-  .build();
+  app.setGlobalPrefix('api');
+  const configervice = app.get(ConfigService);
+  const options = new DocumentBuilder()
+    .setTitle('smart-trash-backend')
+    .setDescription(
+      `
+Smart Trash Backend — Documentación Oficial
+
+Sistema web para rastrear camiones de basura en Buenaventura. 
+Permite a los ciudadanos visualizar rutas y horarios en un mapa interactivo, con simulación casi en tiempo real.
+Incluye frontend en Angular, API backend en NestJS, y base de datos PostgreSQL con PostGIS para manejo de geodatos.
+El proyecto sigue prácticas DevOps como CI/CD, pruebas automatizadas y despliegues eficientes.
+`,
+    )
+    .setVersion('1.0')
+    .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('doc', app, document);
-  const PORT = configervice.get('PORT') // Obtiene el valor de la variable de entorno 'PORT' desde el .env
-  await app.listen(PORT ?? 3000); // Inicia la aplicación en el puerto especificado o usa 3000 por defecto si no existe en el .env
+  const PORT = configervice.get('PORT');
+  await app.listen(PORT ?? 3000);
   console.log(`Servidor corriendo en el puerto: ${PORT ?? 3000}`);
 }
 bootstrap();
