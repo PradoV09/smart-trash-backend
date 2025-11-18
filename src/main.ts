@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configervice = app.get(ConfigService);
   const options = new DocumentBuilder()
     .setTitle('smart-trash-backend')
     .setDescription(
@@ -12,8 +14,10 @@ async function bootstrap() {
     .setVersion('2.0')
     .build();
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api', app, document);
-
-  await app.listen(process.env.PORT ?? 3000);
+  SwaggerModule.setup('doc', app, document);
+  const PORT = configervice.get('PORT');
+  app.setGlobalPrefix('api')
+  await app.listen(PORT);
+  console.log('El servidor esta funcionando en el puerto: ', PORT);
 }
 bootstrap();
