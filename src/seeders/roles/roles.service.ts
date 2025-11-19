@@ -21,6 +21,6 @@ export class RolesService {
       { name: 'conductor', description: 'Gestión de rutas y recolecciones' },
     ];
 
-    await this.rolesRepository.save(roles)
+    await this.rolesRepository.save(roles);
   }
 }
