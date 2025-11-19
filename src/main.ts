@@ -6,10 +6,16 @@ import { RolesService } from './seeders/roles/roles.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
+  await app.init();
+
   const seedService = app.get(RolesService);
   await seedService.Run();
-  await app.close();
-  const configervice = app.get(ConfigService);
+
+  // Swagger
+  const configService = app.get(ConfigService);
   const options = new DocumentBuilder()
     .setTitle('smart-trash-backend')
     .setDescription(
@@ -19,9 +25,11 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('doc', app, document);
-  const PORT = configervice.get('PORT');
-  app.setGlobalPrefix('api');
+
+  const PORT = configService.get('PORT');
+
   await app.listen(PORT);
-  console.log('El servidor esta funcionando en el puerto: ', PORT);
+  console.log('El servidor está funcionando en el puerto:', PORT);
 }
+
 bootstrap();
