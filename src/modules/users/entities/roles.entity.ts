@@ -16,7 +16,7 @@ export class Roles {
   name: string;
 
   @Column()
-  decription: string;
+  description: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
