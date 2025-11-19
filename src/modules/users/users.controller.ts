@@ -17,7 +17,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Crea un nuevo usuario' })
-  @ApiParam({ name: 'id', required: true, description: 'El uuid del usuario.' })
+  @ApiParam({ name: 'uuid', required: true, description: 'El uuid del usuario.' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

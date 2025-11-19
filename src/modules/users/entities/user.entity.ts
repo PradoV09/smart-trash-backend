@@ -4,7 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Roles } from './roles.entity';
 
 @Entity()
 export class User {
@@ -25,4 +28,8 @@ export class User {
 
   @Column({ nullable: true })
   refresh_token?: string;
+
+  @ManyToOne(() => Roles, (roles) => roles.user)
+  @JoinColumn({ name: 'role_uuid' })
+  role: Roles;
 }

@@ -1,4 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -17,33 +22,33 @@ export class UsersService {
       const { user } = createUserDto;
 
       const passwordPlain = createUserDto.password;
-
       const saltRounds = 10;
 
-      const passwordHash = await await bcrypt.hash(passwordPlain, saltRounds);
+      const passwordHash = await bcrypt.hash(passwordPlain, saltRounds);
 
       const existingUser = await this.userRepository.findOneBy({ user });
 
       if (existingUser) {
         throw new ConflictException('El usuario ya se encuentra registrado');
       }
-      
+
       const newUser = this.userRepository.create({
         ...createUserDto,
         password: passwordHash,
       });
 
-      const saveUser = this.userRepository.save(newUser);
+      const savedUser = await this.userRepository.save(newUser);
 
       return {
-        msg: 'El usuario fue creado con exito',
-        user: newUser,
+        msg: 'El usuario fue creado con éxito',
+        user: savedUser,
       };
     } catch (error) {
-      throw new ConflictException(
-        'El usuario ya se encuentra registrado',
-        error,
-      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Error al crear el usuario');
     }
   }
 
