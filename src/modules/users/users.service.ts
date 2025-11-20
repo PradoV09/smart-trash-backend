@@ -37,7 +37,7 @@ export class UsersService {
       }
 
       const role = await this.rolesRepository.findOneBy({
-        name: 'usuario',
+        name: 'admin',
       });
 
       if (!role) {
