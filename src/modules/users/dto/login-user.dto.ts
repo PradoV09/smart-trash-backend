@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, MinLength, IsString } from 'class-validator';
 
-export class CreateUserDto {
+export class LoginUserDto {
   @ApiProperty({
-    description: 'Nombre único del usuario. Se usa para iniciar sesión.',
+    description: 'Nombre del usuario registrado.',
     example: 'juanito_dev',
   })
   @IsNotEmpty({ message: 'El nombre de usuario no puede estar vacío' })
@@ -11,7 +11,7 @@ export class CreateUserDto {
   user: string;
 
   @ApiProperty({
-    description: 'Contraseña del usuario. Debe tener al menos 8 caracteres.',
+    description: 'Contraseña del usuario con al menos 8 caracteres.',
     example: 'contraseñaSegura123',
     minLength: 8,
   })
