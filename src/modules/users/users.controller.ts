@@ -9,7 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { LoginUserDto } from './dto/login-user.dto';
-import { JwtStrategy } from 'src/jwt/jwt.guard';
+import { JwtStrategy } from 'src/guards/jwt/jwt.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -55,11 +55,11 @@ export class UsersController {
   @UseGuards(JwtStrategy)
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    return this.usersService.findOne(id);
   }
 
   @Put(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+    return this.usersService.update(id, updateUserDto);
   }
 }

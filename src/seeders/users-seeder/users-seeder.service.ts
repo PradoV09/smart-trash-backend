@@ -10,6 +10,7 @@ export class UsersSeederService {
       { user: 'jose', password: 'jose1234' },
       { user: 'heiner', password: 'heiner1234' },
       { user: 'jonatan', password: 'jonatan1234' },
+      { user: 'admin', password: 'admin1234' },
     ];
 
     for (const u of usuarios) {

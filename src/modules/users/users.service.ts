@@ -26,6 +26,7 @@ export class UsersService {
 
     private readonly jwtService: JwtService,
   ) {}
+
   async create(createUserDto: CreateUserDto) {
     try {
       const { user } = createUserDto;
@@ -59,7 +60,8 @@ export class UsersService {
 
       return {
         msg: 'El usuario fue creado con éxito',
-        user: savedUser,
+        userName: savedUser.user,
+        userRol: savedUser.role.name,
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -89,21 +91,43 @@ export class UsersService {
         throw new UnauthorizedException('Contraseña incorrecta');
       }
 
+      const payload = { id: user.id };
+      
+      const accessToken = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '15m', 
+      });
+
+      const refreshToken = this.jwtService.sign(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      });
+
+      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+      await this.userRepository.update(user.id, {
+        refresh_token: hashedRefreshToken,
+      });
+
       return {
         message: 'Has iniciado sesión',
-        user,
-        access_token: this.jwtService.sign({ id: user.id }),
+        userName: user.user,
+        access_token: accessToken,
       };
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error(error);
       throw new InternalServerErrorException('Error al iniciar sesión');
     }
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: string, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }
 }
