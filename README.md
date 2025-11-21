@@ -60,12 +60,29 @@ npm install
 Crea un `.env` basado en `.env.example`:
 
 ```
+# -------------------------------
+# Database configuration
+# -------------------------------
+DB_TYPE=
 DB_HOST=
 DB_PORT=
 DB_USER=
-DB_PASS=
+DB_PASSWORD=
 DB_NAME=
+
+# -------------------------------
+# Application configuration
+# -------------------------------
+PORT=
+NODE_ENV=
+
+# -------------------------------
+# AUTH configuration
+# -------------------------------
 JWT_SECRET=
+JWT_EXPIRES=
+JWT_REFRESH_SECRET=
+JWT_REFRESH_EXPIRES=
 ```
 
 ### ▶️ 4. Ejecutar en modo desarrollo
@@ -147,4 +164,5 @@ Las contribuciones son bienvenidas. Abre un issue o pull request para mejoras o 
 ---
 
 **Desarrollado con 💚 por el equipo Smart Trash Routes – Universidad del Valle**
+
 *Backend construido por Jose Luis Prado Valencia*
