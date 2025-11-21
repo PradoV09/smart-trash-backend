@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 
-@Entity()
+@Entity('roles')
 export class Roles {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -16,7 +16,7 @@ export class Roles {
   name: string;
 
   @Column()
-  decription: string;
+  description: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

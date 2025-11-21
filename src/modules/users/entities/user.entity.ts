@@ -29,7 +29,7 @@ export class User {
   @Column({ nullable: true })
   refresh_token?: string;
 
-  @ManyToOne(() => Roles, (roles) => roles.user)
-  @JoinColumn({ name: 'role_uuid' })
+  @ManyToOne(() => Roles, (role) => role.user)
+  @JoinColumn({ name: 'role_id' })
   role: Roles;
 }
