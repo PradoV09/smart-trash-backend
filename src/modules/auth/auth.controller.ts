@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RegisterService } from './register/register.service';
 import { LoginService } from './login/login.service';
 import { LogoutService } from './logout/logout.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { LoginUserDto } from '../users/dto/login-user.dto';
+import { JwtAuthGuard } from 'src/guard/jwt/jwt.guard';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -35,11 +37,16 @@ export class AuthController {
     register(@Body() createUserDto: CreateUserDto) {
         return this.registerService.register(createUserDto);
     }
-    @Get('login')
-    login() {
-        return this.loginService.login()
+    @Post('login')
+    @ApiOperation({ summary: 'Login de usuario' })
+    @ApiBody({ type: LoginUserDto })
+    @ApiResponse({ status: 200, description: 'Login exitoso' })
+    @ApiResponse({ status: 401, description: 'Credenciales incorrectas' })
+    login(@Body() loginUserDto: LoginUserDto) {
+        return this.loginService.login(loginUserDto)
     }
     @Get('logout')
+    @UseGuards(JwtAuthGuard)
     logout() {
         return this.logoutService.logout()
     }
