@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RegisterService } from './register/register.service';
 import { LoginService } from './login/login.service';
@@ -45,7 +45,9 @@ export class AuthController {
     login(@Body() loginUserDto: LoginUserDto) {
         return this.loginService.login(loginUserDto)
     }
-    @Get('logout')
+    @Post('logout')
+    @ApiOperation({ summary: 'Cerrar sesión' })
+    @ApiResponse({ status: 200, description: 'Logout exitoso' })
     @UseGuards(JwtAuthGuard)
     logout() {
         return this.logoutService.logout()
