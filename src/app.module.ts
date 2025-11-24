@@ -5,6 +5,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesSeederModule } from './seeders/roles-seeder/roles-seeder.module';
 import { UsersSeederModule } from './seeders/users-seeder/users-seeder.module';
+import { VehiculosService } from './modules/vehiculos/vehiculos.service';
+import { VehiculosController } from './modules/vehiculos/vehiculos.controller';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { UsersSeederModule } from './seeders/users-seeder/users-seeder.module';
     RolesSeederModule,
     UsersSeederModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [VehiculosController],
+  providers: [VehiculosService],
 })
 export class AppModule {}
