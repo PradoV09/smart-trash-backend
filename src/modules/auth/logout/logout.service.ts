@@ -1,8 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class LogoutService {
-    async logout() {
-        return 'Sesión cerrada correctamente'
-    }
+  constructor(private readonly usersService: UsersService) {}
+
+  async logout(userId: string) {
+    
+    const user = await this.usersService.findById(userId)
+
+    await this.usersService.updateRefreshToken(userId, null);
+
+    return { message: 'Sesión cerrada correctamente' };
+  }
 }

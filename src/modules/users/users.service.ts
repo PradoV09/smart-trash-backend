@@ -56,7 +56,7 @@ export class UsersService {
     return this.userRepository.findOneBy({ id });
   }
 
-  async updateRefreshToken(id: string, refreshToken: string) {
+  async updateRefreshToken(id: string, refreshToken: string | null) {
     await this.userRepository.update(id, { refreshToken });
   }
 }
