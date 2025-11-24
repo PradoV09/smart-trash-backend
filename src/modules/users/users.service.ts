@@ -37,7 +37,7 @@ export class UsersService {
       ...dto,
       nameuser,
       password: passwordHash,
-      role: defaultRole, // <- aquí ya no es null
+      role: defaultRole,
     });
 
     return this.userRepository.save(user);
@@ -46,6 +46,7 @@ export class UsersService {
   async findByName(nameuser: string) {
     return this.userRepository
       .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role')
       .addSelect('user.password')
       .where('user.nameuser = :name', { name: nameuser })
       .getOne();
@@ -53,6 +54,10 @@ export class UsersService {
 
   async findById(id: string) {
     return this.userRepository.findOneBy({ id });
+  }
+
+  async updateRefreshToken(id: string, refreshToken: string) {
+    await this.userRepository.update(id, { refreshToken });
   }
 }
 

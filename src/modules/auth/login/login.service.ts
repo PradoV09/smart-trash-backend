@@ -9,7 +9,7 @@ export class LoginService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async login(dto: LoginUserDto) {
     const name = dto.nameuser.toLowerCase().trim();
@@ -21,8 +21,23 @@ export class LoginService {
     if (!isMatch) throw new UnauthorizedException("Credenciales incorrectas");
 
     const payload = { sub: user.id, username: user.nameuser };
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '15m',
+    });
 
-    return { accessToken, username: user.nameuser };
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+
+    const hashed = await bcrypt.hash(refreshToken, 10);
+    await this.usersService.updateRefreshToken(user.id, hashed);
+
+    return {
+      accessToken,
+      refreshToken,
+      username: user.nameuser,
+      userrol: user.role.nameRol
+    };
   }
+
 }
