@@ -27,5 +27,6 @@ import { Role } from 'src/entities/roles.entity';
   ],
   controllers: [AuthController],
   providers: [RegisterService, LoginService, LogoutService],
+  exports: [JwtModule],
 })
 export class AuthModule { }
