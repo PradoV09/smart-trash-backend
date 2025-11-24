@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { RolesSeederModule } from './seeders/roles-seeder/roles-seeder.module';
+import { UsersSeederModule } from './seeders/users-seeder/users-seeder.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { UsersModule } from './modules/users/users.module';
     }),
     AuthModule,
     UsersModule,
+    RolesSeederModule,
+    UsersSeederModule,
   ],
   controllers: [],
   providers: [],

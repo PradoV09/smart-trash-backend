@@ -2,9 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { UsersSeederService } from './seeders/users-seeder/users-seeder.service';
+import { RolesSeederService } from './seeders/roles-seeder/roles-seeder.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const rolesSeeder = await app.get(RolesSeederService)
+  await rolesSeeder.run()
+  const userSeeder = await app.get(UsersSeederService)
+  await userSeeder.run()
+  
   const configervice = app.get(ConfigService);
   const options = new DocumentBuilder()
     .setTitle('smart-trash-backend')
