@@ -20,7 +20,7 @@ export class LoginService {
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException("Credenciales incorrectas");
 
-    const payload = { sub: user.id, username: user.nameuser };
+    const payload = { sub: user.id, username: user.nameuser, userrol: user.role.nameRol };
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: '15m',
     });

@@ -1,7 +1,7 @@
 # 🚛 Smart Trash Routes – Backend (NestJS)
 
-> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍  
-> **Backend desarrollado completamente por: _Jose Luis Prado Valencia_**
+> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍
+> **Backend desarrollado por: *Jose Luis Prado Valencia***
 
 ---
 
@@ -9,9 +9,9 @@
 
 En Buenaventura no hay claridad sobre los horarios ni los recorridos de los camiones de basura. Esto genera:
 
-- 🗑️ Acumulación de residuos  
-- 😷 Malos olores  
-- 🚯 Desorden en las calles  
+* 🗑️ Acumulación de residuos
+* 😷 Malos olores
+* 🚯 Desorden en las calles
 
 El backend de este proyecto se encarga de manejar toda la lógica, datos y validaciones necesarias para soportar la solución.
 
@@ -21,22 +21,25 @@ El backend de este proyecto se encarga de manejar toda la lógica, datos y valid
 
 Este servidor implementado en **NestJS** tiene como propósito:
 
-- 🧍‍♂️ Gestionar **camiones y empleados (CRUD)**  
-- 🚚 Manejar **rutas y posiciones geográficas**  
-- 🛰️ Proveer endpoints para **simulación de recorridos en tiempo real**  
-- 🔐 Administrar seguridad, validaciones y manejo de datos  
-- 🗺️ Servir datos geoespaciales desde **PostgreSQL + PostGIS**  
+* 🧍‍♂️ Gestionar **camiones y empleados (CRUD)**
+* 🚚 Manejar **rutas y posiciones geográficas**
+* 🛰️ Proveer endpoints para **simulación de recorridos en tiempo real**
+* 🔐 Administrar seguridad, validaciones y manejo de datos
+* 🗺️ Servir datos geoespaciales desde **PostgreSQL + PostGIS**
+* 🌐 Consumir y extender la **API del profesor**: [https://apirecoleccion.gonzaloandreslucio.com/](https://apirecoleccion.gonzaloandreslucio.com/)
+* 📖 Documentación de la API del profesor: [https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/)
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-| Área              | Herramientas                        |
-| ----------------- | ----------------------------------- |
-| **Backend**       | NestJS, TypeORM, pnpm               |
-| **Base de Datos** | PostgreSQL + PostGIS                |
-| **DevOps**        | GitHub Actions (CI/CD)              |
-| **Metodología**   | GitHub Projects, Scrum              |
+| Área              | Herramientas                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| **Backend**       | NestJS, TypeORM, pnpm                                                                    |
+| **Base de Datos** | PostgreSQL + PostGIS                                                                     |
+| **DevOps**        | GitHub Actions (CI/CD)                                                                   |
+| **Metodología**   | GitHub Projects, Scrum                                                                   |
+| **Frontend**      | Angular (repo: [smart-trash-routes](https://github.com/PradoV09/smart-trash-routes.git)) |
 
 ---
 
@@ -47,7 +50,7 @@ Este servidor implementado en **NestJS** tiene como propósito:
 ```bash
 git clone https://github.com/PradoV09/smart-trash-routes-backend.git
 cd smart-trash-routes-backend
-````
+```
 
 ### 📁 2. Instalar dependencias
 
@@ -84,9 +87,21 @@ npm run build
 
 ---
 
+## 🌐 Consumo de la API del Profesor
+
+Este backend **consume y extiende** la API de tu profesor para obtener datos de:
+
+* Vehículos y rutas
+* Empleados y roles
+* Estados de recolección de basura
+
+Todos los endpoints están documentados aquí: [API del profesor](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/).
+
+---
+
 ## 📅 Metodología de Trabajo
 
-El proyecto se desarrolló bajo **Scrum**, con entregas organizadas en GitHub Projects.
+Desarrollo bajo **Scrum**, con entregas organizadas en GitHub Projects.
 
 ### 🧩 Entregables del backend por sprint
 
@@ -102,11 +117,10 @@ El proyecto se desarrolló bajo **Scrum**, con entregas organizadas en GitHub Pr
 
 ## 👥 Equipo de Desarrollo
 
-> **Backend creado completamente por:**
-> **Jose Luis Prado Valencia** – Developer
+> **Backend:** Jose Luis Prado Valencia – Developer
 > GitHub: [@PradoV09](https://github.com/PradoV09)
 
-> **Frontend desarrollado por:**
+> **Frontend:**
 
 | Nombre                      | Rol          | GitHub                                                       |
 | --------------------------- | ------------ | ------------------------------------------------------------ |
