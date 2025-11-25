@@ -7,6 +7,7 @@ import { RolesSeederModule } from './seeders/roles-seeder/roles-seeder.module';
 import { UsersSeederModule } from './seeders/users-seeder/users-seeder.module';
 import { VehiculosService } from './modules/vehiculos/vehiculos.service';
 import { VehiculosController } from './modules/vehiculos/vehiculos.controller';
+import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { VehiculosController } from './modules/vehiculos/vehiculos.controller';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT), 
+      port: Number(process.env.DB_PORT),
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
@@ -25,8 +26,9 @@ import { VehiculosController } from './modules/vehiculos/vehiculos.controller';
     UsersModule,
     RolesSeederModule,
     UsersSeederModule,
+    VehiculosModule
   ],
   controllers: [VehiculosController],
   providers: [VehiculosService],
 })
-export class AppModule {}
+export class AppModule { }
