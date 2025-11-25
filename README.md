@@ -161,4 +161,5 @@ Las contribuciones son bienvenidas. Abre un issue o pull request para mejoras o 
 ---
 
 **Desarrollado con 💚 por el equipo Smart Trash Routes – Universidad del Valle**
+
 *Backend construido por Jose Luis Prado Valencia*
