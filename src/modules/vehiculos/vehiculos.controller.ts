@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VehiculosService } from './vehiculos.service';
-import { JwtAuthGuard } from 'src/guard/jwt/jwt.guard';
-import { RolesGuard } from 'src/guard/roles/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from '@guards/jwt/jwt.guard';
+import { RolesGuard } from '@guards/roles/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
 
 @Controller('vehiculos')
 @UseGuards(JwtAuthGuard, RolesGuard)

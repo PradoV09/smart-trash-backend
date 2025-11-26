@@ -5,7 +5,7 @@ import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Role } from 'src/entities/roles.entity';
+import { Role } from '@entities/roles.entity';
 
 @Injectable()
 export class UsersService {

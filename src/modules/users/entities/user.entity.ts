@@ -1,4 +1,4 @@
-import { Role } from "src/entities/roles.entity";
+import { Role } from "@entities/roles.entity";
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('users')

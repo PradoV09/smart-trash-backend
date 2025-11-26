@@ -8,7 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/users.module';
-import { Role } from 'src/entities/roles.entity';
+import { Role } from '@entities/roles.entity';
 
 @Module({
   imports: [

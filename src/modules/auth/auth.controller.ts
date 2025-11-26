@@ -5,7 +5,7 @@ import { LoginService } from './login/login.service';
 import { LogoutService } from './logout/logout.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
-import { JwtAuthGuard } from 'src/guard/jwt/jwt.guard';
+import { JwtAuthGuard } from '@guards/jwt/jwt.guard';
 
 @Controller('auth')
 @ApiTags('Auth')

@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { LoginUserDto } from 'src/modules/users/dto/login-user.dto';
+import { LoginUserDto } from '@modules/users/dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from 'src/modules/users/users.service';
+import { UsersService } from '@modules/users/users.service';
 
 @Injectable()
 export class LoginService {
