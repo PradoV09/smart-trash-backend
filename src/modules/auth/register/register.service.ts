@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
-import { UsersService } from 'src/modules/users/users.service';
+import { CreateUserDto } from '@modules/users/dto/create-user.dto';
+import { UsersService } from '@modules/users/users.service';
 const bcrypt = require('bcrypt');
 
 @Injectable()
