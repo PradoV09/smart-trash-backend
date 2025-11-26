@@ -9,14 +9,16 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./src",
+
+    "baseUrl": "./",
     "paths": {
-      "@common/*": ["common/*"],
-      "@entities/*": ["entities/*"],
-      "@guards/*": ["guard/*"],
-      "@modules/*": ["modules/*"],
-      "@seeders/*": ["seeders/*"]
+      "@common/*": ["src/common/*"],
+      "@entities/*": ["src/entities/*"],
+      "@guards/*": ["src/guard/*"],
+      "@modules/*": ["src/modules/*"],
+      "@seeders/*": ["src/seeders/*"]
     },
+
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
