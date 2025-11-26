@@ -1,0 +1,60 @@
+name: 🚀 Deploy Backend NestJS to Apache2 VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚙ Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install deps
+        run: npm install
+
+      - name: 🏗 Build backend
+        run: npm run build
+
+      - name: 🧾 Ver dist
+        run: ls -R dist
+
+      - name: 🧹 Clean server backend folder
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p /var/www/jose_site/deploy-backend
+            rm -rf /var/www/jose_site/deploy-backend/*
+            echo "✔ Backend folder cleaned"
+
+      - name: 📤 Upload backend
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "dist/*"
+          target: "/var/www/jose_site/deploy-backend/"
+          overwrite: true
+
+      - name: 🔄 Restart PM2 backend
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            pm2 restart jose-backend || pm2 start /var/www/jose_site/deploy-backend/main.js --name jose-backend
+            pm2 save
+            echo "✔ Backend restarted"
