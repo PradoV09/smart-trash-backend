@@ -10,44 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+      - name: 🧹 Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
+      - name: 🟦 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    - name: Install deps
-      run: npm ci
+      - name: 📦 Install dependencies
+        run: npm install
 
-    - name: Build backend
-      run: npm run build
+      - name: ⚒️ Build NestJS
+        run: npm run build
 
-    # Enviar archivos al servidor
-    - name: Copy backend to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        source: |
-          dist/**
-          package.json
-          package-lock.json
-          .env
-        target: /var/www/jose_site/deploy-backend
+      - name: 🚀 Deploy to Server via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "dist/*"
+          target: "/var/www/smart-trash-backend/dist"
 
-    # Instalar dependencias + reiniciar PM2
-    - name: Execute SSH Commands
-      uses: appleboy/ssh-action@v1.2.0
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        script: |
-          cd /var/www/jose_site/deploy-backend
-          npm ci --omit=dev
-          pm2 delete jose-backend || true
-          pm2 start dist/main.js --name jose-backend
-          pm2 save
+      - name: 🔄 Restart Backend (PM2, Node, etc.)
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/smart-trash-backend
+            npm install --omit=dev
+            pm2 restart smart-backend || pm2 start dist/main.js --name smart-backend
