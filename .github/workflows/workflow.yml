@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "dist/*"
-          target: "/var/www/smart-trash-backend/dist"
+          target: "/var/www/jose_site/deploy-backend"
 
       - name: 🔄 Restart Backend (PM2, Node, etc.)
         uses: appleboy/ssh-action@v0.1.7
