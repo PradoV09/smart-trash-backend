@@ -32,6 +32,8 @@ export class LoginService {
     const hashed = await bcrypt.hash(refreshToken, 10);
     await this.usersService.updateRefreshToken(user.id, hashed);
 
+    console.log("Bienvenido", user.nameuser)
+
     return {
       accessToken,
       refreshToken,

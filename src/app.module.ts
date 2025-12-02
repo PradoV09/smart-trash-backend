@@ -5,9 +5,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesSeederModule } from './seeders/roles-seeder/roles-seeder.module';
 import { UsersSeederModule } from './seeders/users-seeder/users-seeder.module';
-import { VehiculosService } from './modules/vehiculos/vehiculos.service';
-import { VehiculosController } from './modules/vehiculos/vehiculos.controller';
-import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
+import { VehiculosService } from '@modules/integrations/vehiculos/vehiculos.service';
+import { VehiculosController } from '@modules/integrations/vehiculos/vehiculos.controller';
+import { VehiculosModule } from '@modules/integrations/vehiculos/vehiculos.module';
+import { RutasModule } from '@modules/integrations/rutas/rutas.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
     UsersModule,
     RolesSeederModule,
     UsersSeederModule,
-    VehiculosModule
+    VehiculosModule,
+    RutasModule
   ],
   controllers: [VehiculosController],
   providers: [VehiculosService],
