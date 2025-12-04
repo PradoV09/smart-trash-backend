@@ -14,7 +14,6 @@ export class UsersSeederService {
     ) { }
 
     async run() {
-        await this.userRepository.clear()
 
         const users = [
             { nameuser: 'admin', password: 'admin1234' },
