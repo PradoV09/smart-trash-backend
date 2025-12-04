@@ -21,6 +21,7 @@ export class UsersSeederService {
             { nameuser: 'jose', password: 'jose1234' },
             { nameuser: 'heiner', password: 'heiner1234' },
             { nameuser: 'jonatan', password: 'jonatan1234' },
+            { nameuser: 'GlucioProfe', password: 'elprogoat' },
         ]
         for (const u of users) {
             await this.usersService.create(u);
