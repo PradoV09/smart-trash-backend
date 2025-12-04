@@ -11,7 +11,6 @@ export class RolesSeederService {
         private readonly rolesRepository: Repository<Role>
     ) { }
     async run() {
-        await this.rolesRepository.query('TRUNCATE TABLE "roles" CASCADE');
 
         const roles = [
             { nameRol: 'ADMIN', description: 'Control total del sistema. Puede crear, editar y borrar usuarios, roles y configuraciones.' },
