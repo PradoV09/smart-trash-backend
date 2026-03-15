@@ -1,6 +1,11 @@
 # 🚛 Smart Trash Routes – Backend (FastAPI)
 
-> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍
+![Version](https://img.shields.io/badge/version-2.0-blue)
+
+> ⚠️ **Versión 2.0** – Reescritura completa del backend usando **FastAPI (Python)**.  
+> La versión anterior desarrollada en **NestJS (Node.js)** está disponible en la rama `legacy-v1`.
+
+> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍  
 > **Backend desarrollado por: _Jose Luis Prado Valencia y Heiner Jair Godoy Zamora_**
 
 ---
@@ -33,14 +38,15 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 
 ## 🛠️ Tecnologías Utilizadas
 
-| Área              | Herramientas                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------- |
-| **Backend**       | FastAPI, SQLAlchemy, pip                                                                 |
-| **Base de Datos** | PostgreSQL + PostGIS                                                                     |
-| **DevOps**        | GitHub Actions (CI/CD)                                                                   |
-| **Metodología**   | GitHub Projects, Scrum                                                                   |
-| **Frontend web para administrador**      | Angular (repo: [smart-trash-routes-web](https://github.com/PradoV09/smart-trash-routes.git)) |
-| **Frontend mobile para ciudadano** | Ionic (repo: [smart-trash-routes-mobile](https://github.com/PradoV09/smart-trash-routes-Mobile)) |
+| Área                                | Herramientas                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Backend**                         | FastAPI, SQLAlchemy, pip                                                                         |
+| **Base de Datos**                   | PostgreSQL + PostGIS                                                                             |
+| **DevOps**                          | GitHub Actions (CI/CD)                                                                           |
+| **Metodología**                     | GitHub Projects, Scrum                                                                           |
+| **Frontend web para administrador** | Angular (repo: [smart-trash-routes-web](https://github.com/PradoV09/smart-trash-routes.git))     |
+| **Frontend mobile para ciudadano**  | Ionic (repo: [smart-trash-routes-mobile](https://github.com/PradoV09/smart-trash-routes-Mobile)) |
+
 ---
 
 ## 📦 Instalación y Ejecución del Backend
@@ -49,7 +55,7 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 
 ```bash
 git clone https://github.com/PradoV09/smart-trash-routes-backend-fastapi.git
-cd smart-trash-routes-backend-fastapi
+cd smart-trash-routes-backend
 ```
 
 ### 📁 2. Instalar dependencias
@@ -158,4 +164,3 @@ Las contribuciones son bienvenidas. Abre un issue o pull request para mejoras o 
 **Desarrollado con 💚 por el equipo Smart Trash Routes – Universidad del Valle**
 
 _Backend construido por Jose Luis Prado Valencia y Heiner Jair Godoy Zamora_
-Link del proyecto repo apk:
