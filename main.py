@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from config.connection import Base, engine
 from controllers.controller_users import router as users_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -12,6 +13,6 @@ async def lifespan(app: FastAPI):
         print(f"❌ Error al crear tablas: {e}")
     yield
 
-app = FastAPI(title="Smart Trash Backend", lifespan=lifespan)
+app = FastAPI(title="Smart Trash Backend ", lifespan=lifespan)
 
 app.include_router(users_router)

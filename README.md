@@ -69,12 +69,10 @@ pip install -r requirements.txt
 Crea un `.env` basado en `.env.example`:
 
 ```
-DB_HOST=
-DB_PORT=
-DB_USER=
-DB_PASS=
-DB_NAME=
-JWT_SECRET=
+DATABASE_URL=
+SECRET_KEY=
+DEBUG=
+ALLOWED_HOSTS=
 ```
 
 ### ▶️ 4. Ejecutar en modo desarrollo
