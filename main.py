@@ -7,11 +7,12 @@ from routes.router_reportes import router_reportes
 from routes.router_auth import router_auth
 from middlewares.cors import add_cors
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
 
-app = FastAPI(title="Smart Trash Backend", lifespan=lifespan)
+app = FastAPI(title="Smart Trash Backend ", lifespan=lifespan)
 
 @app.get("/")
 def read_root():
