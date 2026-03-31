@@ -1,3 +1,9 @@
+"""Servicios del módulo de usuarios.
+
+Contiene la lógica para crear, consultar, actualizar y desactivar usuarios,
+incluyendo validaciones de rol, duplicados y hash de contraseñas.
+"""
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -8,12 +14,14 @@ from models.model_roles import Rol, TipoRol
 from schemas.schema_usuarios import UsuarioAdminCreate, UsuarioPublicCreate, UsuarioUpdate
 from core.security import hash_password
 
+
 class UsuarioService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def _check_duplicado(self, username: str, correo: str):
+        """Valida que no exista otro usuario con el mismo username o correo."""
         result = await self.db.execute(
             select(Usuario).where(
                 (Usuario.username == username) | (Usuario.correo == correo)
@@ -22,19 +30,24 @@ class UsuarioService:
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El username o correo ya está en uso",
+                detail=f"Ya existe un usuario registrado con el username '{username}' o el correo '{correo}'.",
             )
 
     def _query_con_relaciones(self):
+        """Construye una consulta que precarga `perfil` y `rol`.
+
+        Esto evita cargas diferidas innecesarias y facilita serializar respuestas.
+        """
         return select(Usuario).options(
             selectinload(Usuario.perfil),
             selectinload(Usuario.rol),
         )
 
     async def crear_por_admin(self, data: UsuarioAdminCreate) -> Usuario:
+        """Crea un usuario desde administración y le genera su perfil asociado."""
         await self._check_duplicado(data.username, data.correo)
 
-        # Verificar que el rol existe
+        # Primero se valida que el rol destino exista en la tabla catálogo.
         result = await self.db.execute(
             select(Rol).where(Rol.id_rol == data.id_rol)
         )
@@ -42,10 +55,10 @@ class UsuarioService:
         if not rol:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Rol no encontrado",
+                detail=f"No se encontró un rol con id {data.id_rol}. Verifica el catálogo de roles.",
             )
 
-        # Crear perfil automáticamente
+        # El perfil se crea automáticamente para mantener sincronizada la relación usuario-perfil.
         perfil = Perfil(id_rol=rol.id_rol, nombre=data.username)
         self.db.add(perfil)
         await self.db.flush()
@@ -67,6 +80,7 @@ class UsuarioService:
         return result.scalar_one()
 
     async def registro_publico(self, data: UsuarioPublicCreate) -> Usuario:
+        """Registra usuarios ciudadanos y les asigna automáticamente el rol `user`."""
         await self._check_duplicado(data.username, data.correo)
 
         result = await self.db.execute(
@@ -76,7 +90,7 @@ class UsuarioService:
         if not rol:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Rol 'user' no configurado en el sistema",
+                detail="El rol 'user' no está configurado en el sistema. Verifica la tabla de roles antes de permitir registros públicos.",
             )
 
         perfil = Perfil(id_rol=rol.id_rol, nombre=data.username)
@@ -112,11 +126,15 @@ class UsuarioService:
         if not usuario:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado",
+                detail=f"No se encontró un usuario con id {id_usuario}.",
             )
         return usuario
 
     async def actualizar_usuario(self, id_usuario: int, data: UsuarioUpdate) -> Usuario:
+        """Actualiza solo los campos presentes en el payload.
+
+        Si la contraseña cambia, vuelve a hashearse antes de guardarla.
+        """
         usuario = await self.obtener_usuario_por_id(id_usuario)
         for campo, valor in data.model_dump(exclude_none=True).items():
             if campo == "contraseña":
@@ -130,11 +148,12 @@ class UsuarioService:
         return result.scalar_one()
 
     async def eliminar_usuario(self, id_usuario: int):
+        """Desactiva lógicamente un usuario en lugar de borrarlo por completo."""
         usuario = await self.obtener_usuario_por_id(id_usuario)
         if usuario.rol.nombre == TipoRol.admin:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar un usuario con rol de administrador",
+                detail=f"No se puede desactivar el usuario con id {id_usuario} porque tiene rol de administrador.",
             )
         usuario.activo = False
         await self.db.flush()

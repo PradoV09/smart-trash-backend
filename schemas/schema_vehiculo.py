@@ -1,4 +1,9 @@
-# schemas/vehiculo.py
+# schemas/schema_vehiculo.py
+
+"""Schemas del módulo de vehículos.
+
+Validan la entrada del CRUD y definen la estructura de salida del recurso.
+"""
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime

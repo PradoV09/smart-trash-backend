@@ -1,4 +1,6 @@
-# schemas/tripulacion_asignacion.py
+# schemas/schema_tripulacionasignada.py
+
+"""Schemas del módulo de tripulación asignada."""
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime

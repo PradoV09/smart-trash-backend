@@ -31,17 +31,29 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 - 🛰️ Proveer endpoints para **simulación de recorridos en tiempo real**
 - 🔐 Administrar seguridad, validaciones y manejo de datos
 - 🗺️ Servir datos geoespaciales desde **PostgreSQL + PostGIS**
+- ⚡ Estar **optimizado con programación asíncrona (`async`/`await`)** para mejorar rendimiento y concurrencia
 - 🌐 Consumir y extender la **API del profesor**: [https://apirecoleccion.gonzaloandreslucio.com/](https://apirecoleccion.gonzaloandreslucio.com/)
 - 📖 Documentación de la API del profesor: [https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/)
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## � Documentación de la API
+
+Además de la documentación automática de FastAPI, este repositorio incluye una guía técnica detallada:
+
+- **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Guía funcional de la API:** [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
+- **Guía técnica interna para el equipo:** [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md)
+
+---
+
+## �🛠️ Tecnologías Utilizadas
 
 | Área                                | Herramientas                                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Backend**                         | FastAPI, SQLAlchemy, pip                                                                         |
-| **Base de Datos**                   | PostgreSQL + PostGIS                                                                             |
+| **Backend**                         | FastAPI, SQLAlchemy async, pip                                                                   |
+| **Base de Datos**                   | PostgreSQL + PostGIS + `asyncpg`                                                                 |
 | **DevOps**                          | GitHub Actions (CI/CD)                                                                           |
 | **Metodología**                     | GitHub Projects, Scrum                                                                           |
 | **Frontend web para administrador** | Angular (repo: [smart-trash-routes-web](https://github.com/PradoV09/smart-trash-routes.git))     |
@@ -98,6 +110,7 @@ Este backend **consume y extiende** la API de tu profesor para obtener datos de:
 - Vehículos y rutas
 - Empleados y roles
 - Estados de recolección de basura
+- El identificador `id_ruta`, que es asignado por la **API externa** y no por este backend
 
 Todos los endpoints están documentados aquí: [API del profesor](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/).
 
@@ -159,6 +172,6 @@ Las contribuciones son bienvenidas. Abre un issue o pull request para mejoras o 
 
 ---
 
-**Desarrollado con 💚 por el equipo Smart Trash Routes – Universidad del Valle**
+**Desarrollado con 💚 en el contexto de un proyecto académico de la Universidad del Valle**
 
-_Backend construido por Jose Luis Prado Valencia y Heiner Jair Godoy Zamora_
+_Backend desarrollado por Heiner Jair Godoy Zamora._

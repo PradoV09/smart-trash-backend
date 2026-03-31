@@ -1,4 +1,6 @@
-# models/vehiculo.py
+# models/model_vehiculo.py
+
+"""Modelo ORM de vehículos y catálogo de estados operativos."""
 
 import enum
 from sqlalchemy import Column, Enum, Float, Integer, String, DateTime

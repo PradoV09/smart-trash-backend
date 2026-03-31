@@ -1,3 +1,5 @@
+"""Schemas relacionados con el catálogo de roles."""
+
 from pydantic import BaseModel, ConfigDict
 from models.model_roles import TipoRol
 

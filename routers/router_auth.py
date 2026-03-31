@@ -1,6 +1,6 @@
-# routers/auth_router.py
+# routers/router_auth.py
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from schemas.schema_auth import TokenResponse
 from schemas.schema_usuarios import UsuarioPublicCreate, UsuarioResponse
 from controllers import controller_auth
@@ -8,4 +8,4 @@ from controllers import controller_auth
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 router.post("/login",    response_model=TokenResponse)(controller_auth.login)
-router.post("/registro", response_model=UsuarioResponse)(controller_auth.registro_publico)
+router.post("/registro", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)(controller_auth.registro_publico)

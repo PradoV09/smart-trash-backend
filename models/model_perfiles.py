@@ -1,4 +1,6 @@
-# models/perfil.py
+# models/model_perfiles.py
+
+"""Modelo ORM de perfiles vinculados a los usuarios."""
 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship

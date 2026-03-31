@@ -1,3 +1,5 @@
+"""Schemas relacionados con perfiles de usuario."""
+
 from pydantic import BaseModel, Field, ConfigDict
 from schemas.schema_roles import ResponseRol
 

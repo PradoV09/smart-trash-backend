@@ -1,4 +1,6 @@
-# models/tripulacion_asignacion.py
+# models/model_tripulacionasignacion.py
+
+"""Modelo ORM de la tripulación asignada a cada recorrido."""
 
 import enum
 from sqlalchemy import Column, Enum, Integer, Boolean, DateTime, ForeignKey

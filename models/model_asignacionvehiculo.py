@@ -1,4 +1,6 @@
-# models/asignacion_vehiculo.py
+# models/model_asignacionvehiculo.py
+
+"""Modelo ORM de asignaciones entre vehículos y rutas externas."""
 
 import enum
 from sqlalchemy import Column, Enum, Integer, String, DateTime, ForeignKey

@@ -1,4 +1,6 @@
-# models/rol.py
+# models/model_roles.py
+
+"""Modelo ORM del catálogo de roles del sistema."""
 
 import enum
 from sqlalchemy import Column, Enum, Integer

@@ -1,4 +1,10 @@
-# controllers/reporte_controller.py
+# controllers/controller_reportes.py
+
+"""Controladores del módulo de reportes.
+
+Se usan para registrar incidencias o bitácoras de actividad y para consultarlas
+aplicando filtros simples desde query params.
+"""
 
 from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,12 +13,15 @@ from schemas.schema_reportes import ReporteCreate, ReporteResponse
 from services.service_reportes import ReporteService
 from models.model_usuarios import Usuario
 
+
 async def crear_reporte(
     data: ReporteCreate,
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> ReporteResponse:
+    """Registra un nuevo reporte de actividad en la bitácora del sistema."""
     return await ReporteService(db).registrar_reporte(data)
+
 
 async def listar_reportes(
     id_usuario: int | None = Query(default=None),
@@ -20,4 +29,5 @@ async def listar_reportes(
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> list[ReporteResponse]:
+    """Lista reportes, opcionalmente filtrados por usuario o asunto."""
     return await ReporteService(db).obtener_reportes(id_usuario=id_usuario, asunto=asunto)

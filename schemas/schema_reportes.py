@@ -1,3 +1,8 @@
+"""Schemas del módulo de reportes.
+
+Definen el payload de entrada para registrar actividad y la estructura de salida.
+"""
+
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 

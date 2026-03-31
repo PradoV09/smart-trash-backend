@@ -1,4 +1,10 @@
-# models/usuario.py
+# models/model_usuarios.py
+"""Modelo ORM de usuarios.
+
+Representa a las personas que interactúan con el sistema y conecta
+la autenticación, el rol, el perfil y sus relaciones operativas.
+"""
+
 from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
 from database import Base

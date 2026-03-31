@@ -1,3 +1,9 @@
+"""Schemas del módulo de asignaciones.
+
+Representan la entrada para crear asignaciones y las respuestas detalladas
+para administración y consulta ciudadana.
+"""
+
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from models.model_asignacionvehiculo import EstadoAsignacion

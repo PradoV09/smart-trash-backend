@@ -1,3 +1,9 @@
+"""Schemas del módulo de usuarios.
+
+Se usan para validar creación, actualización y serialización de usuarios,
+perfiles y roles asociados.
+"""
+
 from pydantic import BaseModel, Field, field_validator, ConfigDict, EmailStr
 from typing import Optional
 from datetime import datetime

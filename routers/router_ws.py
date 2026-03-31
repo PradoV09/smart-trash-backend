@@ -1,4 +1,4 @@
-# routers/ws_router.py
+# routers/router_ws.py
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from core.websocket_manager import ws_manager

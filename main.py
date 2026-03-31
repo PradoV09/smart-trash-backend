@@ -1,5 +1,14 @@
 # main.py
 
+"""Punto de entrada principal de la API.
+
+Este archivo:
+1. crea la instancia de FastAPI,
+2. configura CORS,
+3. ejecuta tareas de arranque y cierre con `lifespan`,
+4. monta todos los routers HTTP y WebSocket.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -9,6 +18,7 @@ from routers.router_auth import router as auth_router
 from routers.router_usuarios import router as usuario_router
 from routers.router_vehiculo import router as vehiculo_router
 from routers.router_reportes import router as reporte_router
+from routers.router_ws import router as ws_router
 from routers.router_asignacionvehiculo import (
     router_admin      as asignacion_admin_router,
     router_driver     as asignacion_driver_router,
@@ -18,6 +28,14 @@ from routers.router_asignacionvehiculo import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Gestiona el ciclo de vida de la aplicación.
+
+    Antes de aceptar tráfico:
+    - importa y crea las tablas necesarias.
+
+    Al finalizar:
+    - deja un registro simple en consola para facilitar el monitoreo local.
+    """
     from database import crear_tablas
     await crear_tablas()
     print("✅ Base de datos lista")
@@ -42,6 +60,7 @@ app.include_router(auth_router)
 app.include_router(usuario_router)
 app.include_router(vehiculo_router)
 app.include_router(reporte_router)
+app.include_router(ws_router)
 app.include_router(asignacion_admin_router)
 app.include_router(asignacion_driver_router)
 app.include_router(asignacion_recolector_router)

@@ -1,4 +1,6 @@
-# models/reporte_actividad.py
+# models/model_reportes.py
+
+"""Modelo ORM de reportes y bitácora de actividad del sistema."""
 
 from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
