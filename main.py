@@ -12,6 +12,8 @@ Este archivo:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from core.error_handlers import register_exception_handlers
+from core.response_builders import success_response
 from core.settings import settings
 
 from routers.router_auth import router as auth_router
@@ -48,6 +50,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Registra handlers globales para que todos los errores salgan con el mismo formato JSON.
+register_exception_handlers(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_list,
@@ -68,4 +73,7 @@ app.include_router(asignacion_user_router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Bienvenido a la API Smart Trash Route!"}
+    return success_response(
+        data={"app": "Smart Trash Route API", "version": "1.0.0"},
+        message="Bienvenido a la API Smart Trash Route!",
+    )

@@ -216,6 +216,28 @@ De ahí salen:
 - `RecolectorDep`
 - `UserDep`
 
+### `core/error_handlers.py`
+
+Este módulo centraliza el formato de error de toda la API.
+
+Cuando ocurre un `400`, `401`, `403`, `404`, `422` o `500`, la respuesta ahora sigue esta estructura:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "validation_error",
+    "message": "La solicitud contiene errores de validación.",
+    "details": [],
+    "path": "/auth/login",
+    "method": "POST",
+    "timestamp": "2026-03-31T00:00:00+00:00"
+  }
+}
+```
+
+Esto facilita el manejo uniforme desde frontend y hace más predecible la integración.
+
 ---
 
 ## 3.6 `core/websocket_manager.py`

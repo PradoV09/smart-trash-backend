@@ -148,6 +148,36 @@ El backend usa `HTTPBearer()` y valida el token en `core/dependecies.py`.
 | `403` | El usuario autenticado no tiene el rol requerido |
 | `422` | Faltan campos o tipos válidos en la petición |
 
+### 📦 Formato estándar de error
+
+La API ahora devuelve los errores con una estructura uniforme para facilitar el manejo desde frontend, Postman o integraciones externas:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "No se encontró un vehículo con id 999.",
+    "details": null,
+    "path": "/admin/vehiculos/999",
+    "method": "GET",
+    "timestamp": "2026-03-31T18:30:00+00:00"
+  }
+}
+```
+
+### Campos del error
+
+| Campo | Descripción |
+|---|---|
+| `success` | Siempre `false` cuando ocurre un error |
+| `error.code` | Código semántico (`bad_request`, `unauthorized`, `not_found`, `validation_error`, etc.) |
+| `error.message` | Mensaje claro para frontend o usuario |
+| `error.details` | Información adicional, especialmente útil en validaciones `422` |
+| `error.path` | Ruta donde ocurrió el error |
+| `error.method` | Método HTTP de la petición |
+| `error.timestamp` | Fecha/hora UTC del error |
+
 ---
 
 ## 5. 🧩 Enumeraciones del sistema

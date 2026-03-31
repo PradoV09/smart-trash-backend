@@ -15,6 +15,7 @@ La lógica de operación de rutas vive en los services.
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, AdminDep, DriverDep, RecolectorDep, UserDep
+from core.response_builders import success_response
 from schemas.schema_asignaciovehiculo import (
     AsignacionCreate,
     AsignacionResponse,
@@ -33,7 +34,8 @@ async def crear_asignacion(
     _: Usuario = AdminDep,
 ) -> AsignacionResponse:
     """Crea una nueva asignación de vehículo para una ruta externa."""
-    return await AsignacionService(db).crear_asignacion(data)
+    asignacion = await AsignacionService(db).crear_asignacion(data)
+    return success_response(data=asignacion, message="Asignación creada exitosamente.")
 
 
 async def listar_asignaciones(
@@ -41,7 +43,8 @@ async def listar_asignaciones(
     _: Usuario = AdminDep,
 ) -> list[AsignacionResponse]:
     """Lista todas las asignaciones con vehículo y tripulación asociada."""
-    return await AsignacionService(db).obtener_asignaciones()
+    asignaciones = await AsignacionService(db).obtener_asignaciones()
+    return success_response(data=asignaciones, message="Asignaciones obtenidas exitosamente.")
 
 
 async def obtener_asignacion_admin(
@@ -50,7 +53,8 @@ async def obtener_asignacion_admin(
     _: Usuario = AdminDep,
 ) -> AsignacionResponse:
     """Obtiene el detalle de una asignación desde el contexto administrativo."""
-    return await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    return success_response(data=asignacion, message="Asignación obtenida exitosamente.")
 
 
 async def cancelar_asignacion(
@@ -59,7 +63,8 @@ async def cancelar_asignacion(
     _: Usuario = AdminDep,
 ) -> AsignacionResponse:
     """Cancela una asignación y libera el vehículo asociado."""
-    return await AsignacionService(db).cancelar_asignacion(id_asignacion)
+    asignacion = await AsignacionService(db).cancelar_asignacion(id_asignacion)
+    return success_response(data=asignacion, message="Asignación cancelada exitosamente.")
 
 
 async def agregar_miembro_tripulacion(
@@ -69,7 +74,8 @@ async def agregar_miembro_tripulacion(
     _: Usuario = AdminDep,
 ) -> TripulacionResponse:
     """Agrega un usuario a la tripulación de una asignación pendiente."""
-    return await TripulacionService(db).agregar_miembro(id_asignacion, data)
+    miembro = await TripulacionService(db).agregar_miembro(id_asignacion, data)
+    return success_response(data=miembro, message="Miembro agregado a la tripulación exitosamente.")
 
 
 async def eliminar_miembro_tripulacion(
@@ -80,7 +86,10 @@ async def eliminar_miembro_tripulacion(
 ) -> dict:
     """Elimina un integrante de la tripulación mientras la asignación siga pendiente."""
     await TripulacionService(db).eliminar_miembro_asignacion(id_asignacion, id_usuario)
-    return {"message": "Miembro eliminado de la tripulación"}
+    return success_response(
+        data={"id_asignacion": id_asignacion, "id_usuario": id_usuario},
+        message="Miembro eliminado de la tripulación exitosamente.",
+    )
 
 
 # --- Driver ---
@@ -90,7 +99,8 @@ async def ver_asignacion_driver(
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
     """Permite al conductor consultar la asignación que debe operar."""
-    return await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    return success_response(data=asignacion, message="Asignación del conductor obtenida exitosamente.")
 
 
 async def iniciar_recorrido(
@@ -99,7 +109,8 @@ async def iniciar_recorrido(
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
     """Marca el inicio del recorrido y dispara el evento WebSocket correspondiente."""
-    return await AsignacionService(db).iniciar_recorrido(id_asignacion)
+    asignacion = await AsignacionService(db).iniciar_recorrido(id_asignacion)
+    return success_response(data=asignacion, message="Recorrido iniciado exitosamente.")
 
 
 async def finalizar_recorrido(
@@ -108,7 +119,8 @@ async def finalizar_recorrido(
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
     """Cierra operativamente una asignación en curso."""
-    return await AsignacionService(db).finalizar_recorrido(id_asignacion)
+    asignacion = await AsignacionService(db).finalizar_recorrido(id_asignacion)
+    return success_response(data=asignacion, message="Recorrido finalizado exitosamente.")
 
 
 # --- Recolector ---
@@ -118,7 +130,8 @@ async def ver_asignacion_recolector(
     _: Usuario = RecolectorDep,
 ) -> AsignacionResponse:
     """Permite al recolector consultar los datos de su asignación."""
-    return await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    return success_response(data=asignacion, message="Asignación del recolector obtenida exitosamente.")
 
 
 async def confirmar_participacion(
@@ -128,7 +141,8 @@ async def confirmar_participacion(
     _: Usuario = RecolectorDep,
 ) -> TripulacionResponse:
     """Confirma la participación del integrante y deja trazabilidad en tiempo real."""
-    return await TripulacionService(db).confirmar_asignacion(id_asignacion, id_usuario)
+    miembro = await TripulacionService(db).confirmar_asignacion(id_asignacion, id_usuario)
+    return success_response(data=miembro, message="Participación confirmada exitosamente.")
 
 
 # --- User ciudadano ---
@@ -144,7 +158,7 @@ async def ver_horario_ruta(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No se encontró información de horario para la ruta externa '{id_ruta}'.",
         )
-    return asignacion
+    return success_response(data=asignacion, message="Horario de ruta obtenido exitosamente.")
 
 
 async def verificar_asignacion_usuario(
@@ -153,7 +167,8 @@ async def verificar_asignacion_usuario(
     _: Usuario = UserDep,
 ) -> AsignacionPublicResponse:
     """Expone una consulta puntual de asignación desde el contexto del usuario final."""
-    return await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
+    return success_response(data=asignacion, message="Asignación del usuario obtenida exitosamente.")
 
 
 async def verificar_asignacion_pendiente(
@@ -162,4 +177,5 @@ async def verificar_asignacion_pendiente(
     _: Usuario = AdminDep,
 ) -> AsignacionResponse:
     """Valida que una asignación siga pendiente antes de cambiar su tripulación."""
-    return await AsignacionService(db).verificar_asignacion_pendiente(id_asignacion)
+    asignacion = await AsignacionService(db).verificar_asignacion_pendiente(id_asignacion)
+    return success_response(data=asignacion, message="Asignación pendiente validada exitosamente.")
