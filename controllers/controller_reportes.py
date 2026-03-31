@@ -1,25 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from config.connection import get_db
-from schemas.schema_reportes import ReporteCreate, ResponseReporte
-from services.service_reportes import get_reportes, get_reporte_by_id, create_reporte
+# controllers/reporte_controller.py
 
-router = APIRouter(prefix="/reportes", tags=["Reportes"])
+from fastapi import Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.dependecies import get_db, AdminDep
+from schemas.schema_reportes import ReporteCreate, ReporteResponse
+from services.service_reportes import ReporteService
+from models.model_usuarios import Usuario
 
-@router.get("/", response_model=list[ResponseReporte])
-def list_reportes(db: Session = Depends(get_db)):
-    return get_reportes(db)
+async def crear_reporte(
+    data: ReporteCreate,
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = AdminDep,
+) -> ReporteResponse:
+    return await ReporteService(db).registrar_reporte(data)
 
-@router.get("/{id_registro}", response_model=ResponseReporte)
-def get_reporte(id_registro: int, db: Session = Depends(get_db)):
-    reporte = get_reporte_by_id(db, id_registro)
-    if not reporte:
-        raise HTTPException(status_code=404, detail="Reporte no encontrado")
-    return reporte
-
-@router.post("/", response_model=ResponseReporte, status_code=201)
-def add_reporte(reporte: ReporteCreate, db: Session = Depends(get_db)):
-    try:
-        return create_reporte(db, reporte)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+async def listar_reportes(
+    id_usuario: int | None = Query(default=None),
+    asunto:     str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = AdminDep,
+) -> list[ReporteResponse]:
+    return await ReporteService(db).obtener_reportes(id_usuario=id_usuario, asunto=asunto)

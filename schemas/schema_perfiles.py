@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field, ConfigDict
+from schemas.schema_roles import ResponseRol
 
-class PerfilCreate(BaseModel):
-    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre de la persona")
-    id_rol: int = Field(..., description="ID del rol asignado")
 
-class ResponsePerfil(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class PerfilResponse(BaseModel):
     id_perfil: int
-    nombre: str
-    id_rol: int
+    nombre:    str
+    id_rol:    int
+    rol:       ResponseRol
+
+    model_config = ConfigDict(from_attributes=True)

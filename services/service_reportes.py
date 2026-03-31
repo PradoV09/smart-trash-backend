@@ -1,23 +1,32 @@
-from sqlalchemy.orm import Session
+# services/reporte_service.py
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from models.model_reportes import ReporteActividad
 from schemas.schema_reportes import ReporteCreate
 
-def get_reportes(db: Session):
-    return db.query(ReporteActividad).all()
+class ReporteService:
 
-def get_reporte_by_id(db: Session, id_registro: int):
-    return db.query(ReporteActividad).filter(ReporteActividad.id_registro == id_registro).first()
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-def create_reporte(db: Session, reporte: ReporteCreate):
-    db_reporte = ReporteActividad(
-        id_usuario=reporte.id_usuario,
-        u_gmail_cache=reporte.u_gmail_cache,
-        descripcion=reporte.descripcion,
-        asunto=reporte.asunto,
-        evidencia_url=reporte.evidencia_url,
-        u_rol_cache=reporte.u_rol_cache
-    )
-    db.add(db_reporte)
-    db.commit()
-    db.refresh(db_reporte)
-    return db_reporte
+    async def registrar_reporte(self, data: ReporteCreate) -> ReporteActividad:
+        reporte = ReporteActividad(**data.model_dump())
+        self.db.add(reporte)
+        await self.db.flush()
+        return reporte
+
+    async def obtener_reportes(
+        self,
+        id_usuario: int | None = None,
+        asunto:     str | None = None,
+    ) -> list[ReporteActividad]:
+        query = select(ReporteActividad)
+        if id_usuario:
+            query = query.where(ReporteActividad.id_usuario == id_usuario)
+        if asunto:
+            query = query.where(ReporteActividad.asunto == asunto)
+        result = await self.db.execute(
+            query.order_by(ReporteActividad.fecha.desc())
+        )
+        return result.scalars().all()

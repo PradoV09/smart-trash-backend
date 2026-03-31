@@ -6,7 +6,10 @@ __pycache__/
 # Virtual env
 venv/
 .env
-
+database.py
+alambic/
 # OS
 .DS_Store
 Thumbs.db
+alembic.ini
+usuario_test.py

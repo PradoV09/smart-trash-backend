@@ -1,7 +1,9 @@
+# models/reporte_actividad.py
+
 from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from config.connection import Base
+from database import Base
 
 class ReporteActividad(Base):
     __tablename__ = "ft_reporte_actividad"
@@ -15,4 +17,4 @@ class ReporteActividad(Base):
     evidencia_url = Column(String(255), nullable=True)
     u_rol_cache = Column(String(20), nullable=True)
 
-    usuario = relationship("Usuario")
+    usuario = relationship("Usuario", back_populates="reportes_actividad")
