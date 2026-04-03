@@ -15,7 +15,7 @@ from models.model_usuarios import Usuario
 from models.model_roles import TipoRol
 from typing import AsyncGenerator
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Entrega una sesión asíncrona de SQLAlchemy por request.
@@ -36,6 +36,11 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> Usuario:
     """Resuelve el usuario autenticado a partir del JWT enviado por el cliente."""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token de acceso ausente. Proporciona un token válido para continuar.",
+        )
     payload = verificar_token(credentials.credentials)
     if not payload:
         raise HTTPException(

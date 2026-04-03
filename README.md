@@ -46,6 +46,47 @@ Además de la documentación automática de FastAPI, este repositorio incluye un
 - **Guía funcional de la API:** [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
 - **Guía técnica interna para el equipo:** [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md)
 
+### 📌 Formato de respuesta unificado
+
+Todas las rutas devuelven el siguiente formato estándar:
+
+- `success: true` (operaciones exitosas):
+
+```json
+{
+  "success": true,
+  "message": "Operación completada correctamente.",
+  "data": { ... }
+}
+```
+
+- `success: false` (errores):
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "not_found",
+    "message": "Recurso no encontrado.",
+    "details": null,
+    "path": "/ruta",
+    "method": "GET",
+    "timestamp": "2026-04-02T18:00:00+00:00"
+  }
+}
+```
+
+Esto facilita el consumo de la API desde clientes móviles y web, y reduce lógica extra en el frontend.
+
+### 📌 Soporte de formulario en Swagger
+
+Para los endpoints que reciben payloads (create/update), se implementó `as_form()` en los schemas:
+- `XxxCreate.as_form()` y `XxxUpdate.as_form()`
+- uso de `Form(...)` para requeridos y `Form(None)` para opcionales
+- controladores con `Depends(XxxCreate.as_form)` o `Depends(XxxUpdate.as_form)`
+
+De esta forma Swagger muestra campos separados y el servidor sigue aceptando JSON o form-data.
+
 ---
 
 ## �🛠️ Tecnologías Utilizadas
@@ -100,6 +141,30 @@ uvicorn main:app --reload
 ```bash
 uvicorn main:app
 ```
+
+---
+
+## 🧪 Pruebas automáticas (pytest)
+
+Se agregaron pruebas de integración en `tests/test_api.py` usando `httpx.AsyncClient(app=app)`.
+
+Instala dependencias de test si no están:
+
+```bash
+pip install pytest pytest-asyncio httpx
+```
+
+Ejecuta:
+
+```bash
+pytest -q
+```
+
+Esto verifica:
+- `GET /` → 200, `success: true`
+- `POST /auth/login` con credenciales válidas
+- `POST /auth/login` con payload inválido
+- `GET /no-existe` → 404
 
 ---
 

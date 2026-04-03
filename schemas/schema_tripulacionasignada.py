@@ -6,10 +6,22 @@ from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from models.model_tripulacionasignacion import RolTripulacion
 from schemas.schema_usuarios import UsuarioResponse
+from fastapi import Form
 
 class TripulacionCreate(BaseModel):
     id_usuario:      int = Field(..., gt=0)
     rol_tripulacion: RolTripulacion = Field(..., description="Rol del tripulante en la asignación")
+
+    @classmethod
+    def as_form(
+        cls,
+        id_usuario: int = Form(..., gt=0),
+        rol_tripulacion: RolTripulacion = Form(...),
+    ):
+        return cls(
+            id_usuario=id_usuario,
+            rol_tripulacion=rol_tripulacion,
+        )
 
 class TripulacionResponse(BaseModel):
     id:              int

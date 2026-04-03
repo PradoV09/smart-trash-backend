@@ -22,6 +22,5 @@ class Vehiculo(Base):
     modelo       = Column(String(100), nullable=True)
     capacidad_m3 = Column(Float, nullable=True)
     estado       = Column(Enum(EstadoVehiculo), nullable=False, default=EstadoVehiculo.disponible)
-    created_at   = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     asignaciones = relationship("AsignacionVehiculo", back_populates="vehiculo")

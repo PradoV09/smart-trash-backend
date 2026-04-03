@@ -240,6 +240,25 @@ Esto facilita el manejo uniforme desde frontend y hace más predecible la integr
 
 ---
 
+### 3.5.1 `as_form()` para formularios en Swagger
+
+Para los recursos con un request body, ahora se expone cada campo individual en Swagger usando `Form()`. Las entradas de creando y actualización usan `Depends(XxxCreate.as_form)` (o `XxxUpdate.as_form`) en el controller.
+
+- Campos requeridos: `Form(...)`
+- Campos opcionales: `Form(None)`
+- Retorna: `cls(...)` con todos los datos
+
+Ejemplos:
+- `UsuarioAdminCreate.as_form` / `UsuarioUpdate.as_form`
+- `VehiculoCreate.as_form` / `VehiculoUpdate.as_form`
+- `AsignacionCreate.as_form` / `AsignacionUpdate.as_form`
+- `ReporteCreate.as_form`
+- `TripulacionCreate.as_form`
+
+Esto habilita un mejor uso de Swagger UI y `application/x-www-form-urlencoded` sin romper las API existentes.
+
+---
+
 ## 3.6 `core/websocket_manager.py`
 
 ### Qué hace

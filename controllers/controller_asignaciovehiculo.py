@@ -29,7 +29,7 @@ from fastapi import HTTPException, status
 
 # --- Admin ---
 async def crear_asignacion(
-    data: AsignacionCreate,
+    data: AsignacionCreate = Depends(AsignacionCreate.as_form),
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> AsignacionResponse:
@@ -69,7 +69,7 @@ async def cancelar_asignacion(
 
 async def agregar_miembro_tripulacion(
     id_asignacion: int,
-    data: TripulacionCreate,
+    data: TripulacionCreate = Depends(TripulacionCreate.as_form),
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> TripulacionResponse:

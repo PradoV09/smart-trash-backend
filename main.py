@@ -5,7 +5,7 @@
 Este archivo:
 1. crea la instancia de FastAPI,
 2. configura CORS,
-3. ejecuta tareas de arranque y cierre con `lifespan`,
+3. ejecuta tareas de arranque y cierre con lifespan,
 4. monta todos los routers HTTP y WebSocket.
 """
 
@@ -28,6 +28,7 @@ from routers.router_asignacionvehiculo import (
     router_user       as asignacion_user_router,
 )
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestiona el ciclo de vida de la aplicación.
@@ -44,10 +45,12 @@ async def lifespan(app: FastAPI):
     yield
     print("🛑 Servidor detenido")
 
+
 app = FastAPI(
     title="Smart Trash Route API",
     version="1.0.0",
     lifespan=lifespan,
+    redirect_slashes=False,  # ✅ aquí va — evita 307 en tests y clientes
 )
 
 # Registra handlers globales para que todos los errores salgan con el mismo formato JSON.
@@ -70,6 +73,7 @@ app.include_router(asignacion_admin_router)
 app.include_router(asignacion_driver_router)
 app.include_router(asignacion_recolector_router)
 app.include_router(asignacion_user_router)
+
 
 @app.get("/")
 def read_root():

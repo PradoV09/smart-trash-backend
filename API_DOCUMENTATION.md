@@ -269,20 +269,38 @@ Inicia sesión usando `username` o `correo` en el campo `identifier`.
   - `rol`: ID del rol
   - `exp`: expiración según `JWT_EXPIRE_MINUTES`
 
-### Respuesta exitosa
+### Respuesta exitosa unificada
 
 ```json
 {
-  "access_token": "<jwt>",
-  "token_type": "bearer"
+  "success": true,
+  "message": "Inicio de sesión exitoso.",
+  "data": {
+    "access_token": "<jwt>",
+    "token_type": "bearer"
+  }
 }
 ```
 
-### Errores esperados
+### Errores esperados (formato unificado)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "unauthorized",
+    "message": "Credenciales incorrectas.",
+    "details": null,
+    "path": "/auth/login",
+    "method": "POST",
+    "timestamp": "2026-04-02T18:00:00+00:00"
+  }
+}
+```
 
 | Código | Detalle |
 |---|---|
-| `401` | `Credenciales incorrectas` |
+| `401` | Credenciales incorrectas |
 | `422` | Payload inválido |
 
 ### Ejemplo `curl`

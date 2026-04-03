@@ -8,8 +8,8 @@ from controllers import controller_vehiculo
 
 router = APIRouter(prefix="/admin/vehiculos", tags=["Vehículos"])
 
-router.post("/",                      response_model=SuccessResponse[VehiculoResponse], status_code=status.HTTP_201_CREATED)(controller_vehiculo.crear_vehiculo)
-router.get("/",                       response_model=SuccessResponse[list[VehiculoResponse]])(controller_vehiculo.listar_vehiculos)
+router.post("",                      response_model=SuccessResponse[VehiculoResponse], status_code=status.HTTP_201_CREATED)(controller_vehiculo.crear_vehiculo)
+router.get("",                       response_model=SuccessResponse[list[VehiculoResponse]])(controller_vehiculo.listar_vehiculos)
 router.get("/{id_vehiculo}",          response_model=SuccessResponse[VehiculoResponse])(controller_vehiculo.obtener_vehiculo)
 router.patch("/{id_vehiculo}",        response_model=SuccessResponse[VehiculoResponse])(controller_vehiculo.actualizar_vehiculo)
 router.patch("/{id_vehiculo}/estado", response_model=SuccessResponse[VehiculoResponse])(controller_vehiculo.cambiar_estado_vehiculo)

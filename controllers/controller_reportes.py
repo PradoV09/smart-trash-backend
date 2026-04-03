@@ -16,7 +16,7 @@ from models.model_usuarios import Usuario
 
 
 async def crear_reporte(
-    data: ReporteCreate,
+    data: ReporteCreate = Depends(ReporteCreate.as_form),
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> ReporteResponse:
