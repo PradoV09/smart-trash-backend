@@ -16,6 +16,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, AdminDep, DriverDep, RecolectorDep, UserDep
 from core.response_builders import success_response
+from schemas.schema_responses import SuccessResponse
 from schemas.schema_asignaciovehiculo import (
     AsignacionCreate,
     AsignacionResponse,
@@ -41,10 +42,25 @@ async def crear_asignacion(
 async def listar_asignaciones(
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
-) -> list[AsignacionResponse]:
+) -> SuccessResponse[list[AsignacionResponse]]:
     """Lista todas las asignaciones con vehículo y tripulación asociada."""
     asignaciones = await AsignacionService(db).obtener_asignaciones()
     return success_response(data=asignaciones, message="Asignaciones obtenidas exitosamente.")
+
+
+async def obtener_detalles_ruta(
+    id_ruta: int,
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = AdminDep,
+) -> SuccessResponse[dict]:
+    """Obtiene los detalles completos de una ruta desde el servicio externo de rutas."""
+    detalles = await AsignacionService(db).obtener_detalles_ruta(id_ruta)
+    if not detalles:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontraron detalles para la ruta con id {id_ruta}.",
+        )
+    return success_response(data=detalles, message="Detalles de ruta obtenidos exitosamente.")
 
 
 async def obtener_asignacion_admin(

@@ -15,6 +15,7 @@ from models.model_asignacionvehiculo import AsignacionVehiculo, EstadoAsignacion
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
 from schemas.schema_asignaciovehiculo import AsignacionCreate
 from core.websocket_manager import ws_manager
+from services.service_rutas_externo import RutasExternoService
 
 
 class AsignacionService:
@@ -34,6 +35,15 @@ class AsignacionService:
 
     async def crear_asignacion(self, data: AsignacionCreate) -> AsignacionVehiculo:
         """Crea una asignación nueva si el vehículo existe y está disponible."""
+        # Validar que la ruta existe en la API externa
+        rutas_service = RutasExternoService()
+        ruta_existe = await rutas_service.validar_ruta_existe(data.id_ruta)
+        if not ruta_existe:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"La ruta con id {data.id_ruta} no existe en el servicio de rutas.",
+            )
+
         result = await self.db.execute(
             select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo)
         )
@@ -164,3 +174,8 @@ class AsignacionService:
             "estado":        asignacion.estado.value,
         })
         return asignacion
+
+    async def obtener_detalles_ruta(self, id_ruta: int) -> dict | None:
+        """Obtiene los detalles completos de una ruta desde la API externa."""
+        rutas_service = RutasExternoService()
+        return await rutas_service.obtener_ruta_por_id(id_ruta)

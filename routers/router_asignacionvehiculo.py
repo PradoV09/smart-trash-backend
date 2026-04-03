@@ -11,6 +11,7 @@ router_admin = APIRouter(prefix="/admin/asignaciones", tags=["Asignaciones - Adm
 
 router_admin.post("/",                                        response_model=SuccessResponse[AsignacionResponse], status_code=status.HTTP_201_CREATED)(controller_asignaciovehiculo.crear_asignacion)
 router_admin.get("/",                                         response_model=SuccessResponse[list[AsignacionResponse]])(controller_asignaciovehiculo.listar_asignaciones)
+router_admin.get("/rutas/{id_ruta}",                          response_model=SuccessResponse[dict])(controller_asignaciovehiculo.obtener_detalles_ruta)
 router_admin.get("/{id_asignacion}",                          response_model=SuccessResponse[AsignacionResponse])(controller_asignaciovehiculo.obtener_asignacion_admin)
 router_admin.post("/{id_asignacion}/cancelar",                response_model=SuccessResponse[AsignacionResponse])(controller_asignaciovehiculo.cancelar_asignacion)
 router_admin.post("/{id_asignacion}/tripulacion",             response_model=SuccessResponse[TripulacionResponse], status_code=status.HTTP_201_CREATED)(controller_asignaciovehiculo.agregar_miembro_tripulacion)

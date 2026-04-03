@@ -10,6 +10,25 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Archivos de ejemplo y pruebas creados (no subir al repo)
+benchmark_performance.py
+configuracion-integracion.py
+ejemplo-backend.py
+ejemplo-frontend.js
+setup_websocket_test.py
+test_websockets.py
 usuario_test.py
-tests/
-pytest.ini
+
+# Directorio de pruebas (mantener en repo)
+# tests/
+# pytest.ini
+docker-compose.test.yml
+dockerfile.test
+Dockerfile
+ejemplo-backend.py
+ejemplo-frontend.js
+configuracion-integracion.py
+setup_websocket_test.py
+test_websockets.py
+usuario_test.py

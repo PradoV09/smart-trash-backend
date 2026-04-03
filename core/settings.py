@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM:       str = "HS256"
     JWT_EXPIRE_MINUTES:  int = 480
     CORS_ORIGINS:        str = "http://localhost:4200"
+    RUTAS_API_URL:       str = "http://localhost:8001"  # URL de la API externa de rutas
 
     @property
     def cors_list(self) -> List[str]:

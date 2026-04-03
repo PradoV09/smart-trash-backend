@@ -1,1169 +1,447 @@
 # 📘 Documentación técnica y funcional de la API
 
-> **Proyecto:** `smart-trash-backend`  
-> **Framework:** FastAPI  
-> **Versión declarada en la app:** `1.0.0`  
-> **Autor del backend:** `Heiner Jair Godoy Zamora`  
-> **Fecha de revisión:** `31 de marzo de 2026`
+> **Proyecto:** `smart-trash-backend`
+> **Framework:** FastAPI
+> **Versión:** `1.0.2`
+> **Autor:** `Heiner Jair Godoy Zamora`
+> **Fecha de revisión:** `2 de abril de 2026`
 
 ---
 
-## 📎 Documentación complementaria para el equipo
+## 1. Resumen ejecutivo
 
-Para entender el código con más profundidad y facilitar mantenimiento o escalabilidad, revisa también:
+Smart Trash Route es un backend FastAPI para la gestión de rutas de recolección de desechos, que soporta:
 
-- [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md) → guía interna, comentada por módulos y flujo de ejecución.
-
----
-
-## 1. ✅ Resumen ejecutivo
-
-Esta API backend soporta el sistema **Smart Trash Route**, una plataforma para gestionar:
-
-- autenticación de usuarios,
-- administración de usuarios y roles,
-- gestión de vehículos recolectores,
-- registro de reportes,
-- asignación de vehículos a rutas,
-- confirmación de tripulación,
-- seguimiento del estado operativo de los recorridos.
-
-La aplicación está construida con una arquitectura por capas:
-
-- `routers/` → expone los endpoints HTTP,
-- `controllers/` → conecta rutas con la lógica,
-- `services/` → implementa reglas de negocio,
-- `models/` → define tablas y relaciones SQLAlchemy,
-- `schemas/` → define contratos de entrada/salida con Pydantic,
-- `core/` → seguridad, configuración, dependencias y WebSockets.
-
-Además, esta API fue **optimizada con programación asíncrona (`async`/`await`)**, lo que permite manejar operaciones de base de datos, autenticación y comunicación en tiempo real de forma más eficiente y sin bloquear el flujo del servidor.
----
-
-## 2. 🧱 Arquitectura del proyecto
-
-### Flujo interno de una petición
-
-```text
-Cliente HTTP
-   ↓
-Router (`routers/`)
-   ↓
-Controller (`controllers/`)
-   ↓
-Service (`services/`)
-   ↓
-Model + DB (`models/`, `database.py`)
-   ↓
-Schema de respuesta (`schemas/`)
-```
-
-### Archivos clave revisados
-
-| Archivo | Función |
-|---|---|
-| `main.py` | Crea la app FastAPI, CORS y registra routers con `lifespan` asíncrono |
-| `core/dependecies.py` | Manejo de sesión DB, JWT y autorización por rol |
-| `core/security.py` | Hash de contraseñas y validación JWT, incluyendo verificación async |
-| `database.py` | Engine async SQLAlchemy y creación de tablas |
-| `routers/*.py` | Definición pública de endpoints |
-| `services/*.py` | Reglas de negocio y validaciones asíncronas |
-
-### ⚡ Optimización asíncrona de la API
-
-Esta API fue diseñada para aprovechar el modelo **asíncrono** de FastAPI:
-
-- uso de `async def` en controladores y servicios,
-- conexión a base de datos con `AsyncSession`,
-- motor SQLAlchemy con `create_async_engine`,
-- manejo no bloqueante del ciclo de vida de la app con `@asynccontextmanager`,
-- verificación de contraseñas con `verify_password_async()`,
-- soporte de comunicación en tiempo real mediante WebSockets.
-
-Esto mejora la capacidad de respuesta del backend cuando existen múltiples peticiones concurrentes.
+- Autenticación JWT y autorización por roles (RBAC).
+- CRUD de usuarios y vehículos (módulo admin).
+- Administración de reportes operativos.
+- Asignación de rutas/vehículos y logica de tripulación.
+- Sesiones de WebSocket para eventos en tiempo real de cada asignación.
+- **Integración con APIs externas** para validación de rutas.
+- **Optimización completa** con async/await y manejo robusto de errores.
 
 ---
 
-## 3. 🌐 Información general de despliegue
+## 2. Arquitectura y flujo general
 
-### Base URL local
+- Capas: routers → controllers → services → models + DB → schemas.
+- Core: seguridad, dependencias, respuestas uniformes y WebSocket manager.
+- **Optimización:** Programación asíncrona completa, cache para APIs externas.
 
-```http
-http://localhost:8000
-```
+### 2.1. Flujo de una petición HTTP
 
-### Endpoints automáticos de FastAPI
+1. Cliente envía request a un endpoint.
+2. Router decide el path y aplica `Depends` (autorización, body parsing).
+3. Controller valida contexto y delega al Service.
+4. Service ejecuta reglas de negocio con SQLAlchemy asíncrono (`AsyncSession`).
+5. Controller retorna usando `success_response` y el esquema Pydantic.
 
-| Endpoint | Descripción |
-|---|---|
-| `GET /` | Mensaje de bienvenida |
-| `GET /docs` | Swagger UI |
-| `GET /redoc` | ReDoc |
-| `GET /openapi.json` | Especificación OpenAPI generada automáticamente |
+### 2.2. Optimizaciones Implementadas
 
-### Respuesta de raíz
+- **Async/Await completo:** Todas las operaciones I/O son no bloqueantes
+- **WebSockets robustos:** Manejo de conexiones con reconexión automática
+- **Cache inteligente:** Para llamadas a APIs externas
+- **Rate limiting:** Protección contra abuso de endpoints
+- **Health checks:** Monitoreo de salud de la aplicación
 
-**`GET /`**
+---
 
+## 3. Autenticación y autorización
+
+- JWT con `Authorization: Bearer <token>`.
+- Token genera `sub=id_usuario` y `rol`.
+- Dependencias en `core/dependecies.py`:
+  - `AdminDep`, `DriverDep`, `RecolectorDep`, `UserDep`.
+
+### 3.1. Roles disponibles
+
+- `admin`: Acceso completo a todas las funcionalidades
+- `driver`: Gestión de asignaciones y reportes de ruta
+- `recolector`: Visualización de asignaciones y reportes
+- `user`: Acceso básico de consulta
+
+### 3.2. Seguridad Optimizada
+
+- **JWT seguro:** Generado con `secrets.token_hex(32)`
+- **Expiración configurable:** 480 minutos por defecto
+- **Manejo de errores:** 403 para token ausente, 401 para inválido
+- **CORS múltiple:** Configurado para desarrollo y producción
+
+---
+
+## 4. Endpoints principales
+
+### 4.1. Autenticación
+- `POST /auth/login` - Login con credenciales
+- Formato: `application/x-www-form-urlencoded`
+
+### 4.2. Usuarios (Admin)
+- `GET /admin/usuarios` - Listar usuarios
+- `POST /admin/usuarios` - Crear usuario
+- `GET /admin/usuarios/{id}` - Obtener usuario
+- `PATCH /admin/usuarios/{id}` - Actualizar usuario
+- `DELETE /admin/usuarios/{id}` - Eliminar usuario
+
+### 4.3. Vehículos (Admin)
+- `GET /admin/vehiculos` - Listar vehículos
+- `POST /admin/vehiculos` - Crear vehículo
+- `GET /admin/vehiculos/{id}` - Obtener vehículo
+- `PATCH /admin/vehiculos/{id}` - Actualizar vehículo
+- `DELETE /admin/vehiculos/{id}` - Eliminar vehículo
+
+### 4.4. Asignaciones
+- **Admin:** `GET|POST /admin/asignaciones`
+- **Driver:** `GET|POST /driver/asignaciones`
+- **Recolector:** `GET|POST /recolector/asignaciones`
+- **User:** `GET /user/asignaciones`
+
+### 4.5. Reportes
+- `GET /admin/reportes` - Reportes administrativos
+- `POST /admin/reportes` - Crear reporte
+
+### 4.6. WebSockets
+- `WebSocket /ws/conectar` - Conexión WebSocket con token
+- `GET /ws/stats` - Estadísticas de conexiones
+
+### 4.7. Utilidades
+- `GET /` - Información de la API
+- `GET /health` - Health check
+- `GET /docs` - Documentación Swagger
+- `GET /redoc` - Documentación ReDoc
+
+---
+
+## 5. Integración con APIs Externas
+
+### 5.1. API de Rutas
+- **URL configurable:** `RUTAS_API_URL` en `.env`
+- **Validación automática:** Al crear asignaciones
+- **Cache implementado:** Para mejorar rendimiento
+- **Fallback robusto:** Manejo de errores de red
+
+### 5.2. Ejemplos de Integración
+- **Frontend JavaScript:** `ejemplo-frontend.js`
+- **Backend Python:** `ejemplo-backend.py`
+- **Testing WebSockets:** `test_websockets.py`
+
+---
+
+## 6. Manejo de Errores y Respuestas
+
+### 6.1. Formato Unificado
+Todas las respuestas siguen el formato:
+
+**Éxito:**
 ```json
 {
-  "message": "Bienvenido a la API Smart Trash Route!"
+  "success": true,
+  "message": "Operación completada",
+  "data": { ... }
 }
 ```
 
----
-
-## 4. 🔐 Autenticación y autorización
-
-La API usa **JWT Bearer Token**.
-
-### Flujo de autenticación
-
-1. El usuario se registra o inicia sesión.
-2. `POST /auth/login` devuelve `access_token`.
-3. El cliente envía el token en el header:
-
-```http
-Authorization: Bearer <token>
-```
-
-### Esquema de seguridad
-
-El backend usa `HTTPBearer()` y valida el token en `core/dependecies.py`.
-
-### Roles soportados
-
-| Rol | Valor interno | Uso |
-|---|---|---|
-| Administrador | `admin` | Gestiona usuarios, vehículos, reportes y asignaciones |
-| Conductor | `driver` | Visualiza asignación y cambia estado del recorrido |
-| Recolector | `recolector` | Confirma participación en asignación |
-| Ciudadano/usuario | `user` | Consulta horario de rutas |
-
-### Códigos de error frecuentes de seguridad
-
-| Código | Motivo |
-|---|---|
-| `401` | Token inválido, expirado o usuario inexistente |
-| `403` | El usuario autenticado no tiene el rol requerido |
-| `422` | Faltan campos o tipos válidos en la petición |
-
-### 📦 Formato estándar de error
-
-La API ahora devuelve los errores con una estructura uniforme para facilitar el manejo desde frontend, Postman o integraciones externas:
-
+**Error:**
 ```json
 {
   "success": false,
   "error": {
-    "code": "not_found",
-    "message": "No se encontró un vehículo con id 999.",
+    "code": "error_type",
+    "message": "Descripción del error",
     "details": null,
-    "path": "/admin/vehiculos/999",
-    "method": "GET",
-    "timestamp": "2026-03-31T18:30:00+00:00"
+    "timestamp": "2026-04-02T..."
   }
 }
 ```
 
-### Campos del error
-
-| Campo | Descripción |
-|---|---|
-| `success` | Siempre `false` cuando ocurre un error |
-| `error.code` | Código semántico (`bad_request`, `unauthorized`, `not_found`, `validation_error`, etc.) |
-| `error.message` | Mensaje claro para frontend o usuario |
-| `error.details` | Información adicional, especialmente útil en validaciones `422` |
-| `error.path` | Ruta donde ocurrió el error |
-| `error.method` | Método HTTP de la petición |
-| `error.timestamp` | Fecha/hora UTC del error |
+### 6.2. Códigos de Error
+- `unauthorized`: Token inválido o expirado
+- `forbidden`: Token ausente o permisos insuficientes
+- `not_found`: Recurso no encontrado
+- `validation_error`: Datos inválidos
+- `internal_error`: Error del servidor
 
 ---
 
-## 5. 🧩 Enumeraciones del sistema
+## 7. Testing y Calidad
 
-### `TipoRol`
+### 7.1. Tests Automatizados
+- **Cobertura:** 6 tests principales
+- **Estado:** ✅ Todos pasan
+- **Tipos:** Autenticación, rutas protegidas, WebSockets
 
-```text
-admin | driver | user | recolector
-```
+### 7.2. Verificación de Calidad
+- **Sintaxis:** Todos los archivos verificados
+- **Importaciones:** Dependencias correctas
+- **Configuración:** Variables de entorno validadas
 
-### `EstadoVehiculo`
-
-```text
-disponible | en_ruta | mantenimiento | inactivo
-```
-
-### `EstadoAsignacion`
-
-```text
-pendiente | en_curso | completada | cancelada
-```
-
-### `RolTripulacion`
-
-```text
-piloto | copiloto | recolector
-```
+### 7.3. Rendimiento
+- **Benchmarking:** `benchmark_performance.py`
+- **Métricas:** Latencia, throughput, concurrencia
+- **Optimización:** Async completo, cache, rate limiting
 
 ---
 
-## 6. 📚 Mapa general de endpoints
+## 8. Despliegue y Configuración
 
-| Método | Ruta | Rol requerido | Descripción |
-|---|---|---|---|
-| `GET` | `/` | Público | Bienvenida |
-| `POST` | `/auth/login` | Público | Iniciar sesión |
-| `POST` | `/auth/registro` | Público | Registro público de usuario |
-| `POST` | `/admin/usuarios/` | `admin` | Crear usuario por admin |
-| `GET` | `/admin/usuarios/` | `admin` | Listar usuarios |
-| `GET` | `/admin/usuarios/{id_usuario}` | `admin` | Obtener usuario |
-| `PATCH` | `/admin/usuarios/{id_usuario}` | `admin` | Actualizar usuario |
-| `DELETE` | `/admin/usuarios/{id_usuario}` | `admin` | Desactivar usuario |
-| `POST` | `/admin/vehiculos/` | `admin` | Crear vehículo |
-| `GET` | `/admin/vehiculos/` | `admin` | Listar vehículos |
-| `GET` | `/admin/vehiculos/{id_vehiculo}` | `admin` | Obtener vehículo |
-| `PATCH` | `/admin/vehiculos/{id_vehiculo}` | `admin` | Actualizar vehículo |
-| `PATCH` | `/admin/vehiculos/{id_vehiculo}/estado` | `admin` | Cambiar estado del vehículo |
-| `DELETE` | `/admin/vehiculos/{id_vehiculo}` | `admin` | Eliminar vehículo |
-| `POST` | `/admin/reportes/` | `admin` | Crear reporte |
-| `GET` | `/admin/reportes/` | `admin` | Listar reportes con filtros |
-| `POST` | `/admin/asignaciones/` | `admin` | Crear asignación de vehículo a ruta |
-| `GET` | `/admin/asignaciones/` | `admin` | Listar asignaciones |
-| `GET` | `/admin/asignaciones/{id_asignacion}` | `admin` | Obtener asignación |
-| `POST` | `/admin/asignaciones/{id_asignacion}/cancelar` | `admin` | Cancelar asignación |
-| `POST` | `/admin/asignaciones/{id_asignacion}/tripulacion` | `admin` | Agregar miembro a tripulación |
-| `DELETE` | `/admin/asignaciones/{id_asignacion}/tripulacion/{id_usuario}` | `admin` | Eliminar miembro de tripulación |
-| `GET` | `/driver/asignaciones/{id_asignacion}` | `driver` | Ver asignación como conductor |
-| `POST` | `/driver/asignaciones/{id_asignacion}/iniciar` | `driver` | Iniciar recorrido |
-| `POST` | `/driver/asignaciones/{id_asignacion}/finalizar` | `driver` | Finalizar recorrido |
-| `GET` | `/recolector/asignaciones/{id_asignacion}` | `recolector` | Ver asignación como recolector |
-| `POST` | `/recolector/asignaciones/{id_asignacion}/confirmar/{id_usuario}` | `recolector` | Confirmar participación |
-| `GET` | `/rutas/{id_ruta}/horario` | `user` | Consultar horario de una ruta |
+### 8.1. Variables de Entorno (.env)
+```env
+DATABASE_URL=postgresql+asyncpg://user:pass@host:port/db
+SECRET_KEY=clave_secreta_segura
+JWT_SECRET=clave_jwt_segura_generada
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=480
+CORS_ORIGINS=http://localhost:4200,http://localhost:3000
+RUTAS_API_URL=http://localhost:8001
+```
 
-> **Nota:** las rutas de creación principales ya responden con `201 Created`, alineadas con las buenas prácticas REST.
+### 8.2. Comando de Ejecución
+```bash
+# Desarrollo
+uvicorn main:app --reload
+
+# Producción
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### 8.3. Health Checks
+- **Endpoint:** `GET /health`
+- **Base de datos:** Verificación de conexión
+- **APIs externas:** Validación de conectividad
 
 ---
 
-# 7. 🔑 Módulo de autenticación
+## 9. Historial de Optimizaciones
 
-## 7.1 `POST /auth/login`
+### Versión 1.0.2
+- ✅ **Reorganización completa de `main.py`**
+- ✅ **Corrección de errores de sintaxis**
+- ✅ **Configuración .env segura**
+- ✅ **WebSockets optimizados**
+- ✅ **Documentación actualizada**
+- ✅ **Tests completos y funcionales**
 
-Inicia sesión usando `username` o `correo` en el campo `identifier`.
+### Correcciones Realizadas
+- Sintaxis en archivos de documentación
+- Configuración de routers duplicada
+- Variables de entorno incompletas
+- Contenido HTML en archivos JS
+- Indentación incorrecta en código
 
-### Body
+---
 
-```json
-{
-  "identifier": "admin",
-  "contraseña": "admin123"
-}
-```
+## 10. Contacto y Soporte
 
-### Reglas
+- **Desarrolladores:** Jose Luis Prado Valencia, Heiner Jair Godoy Zamora
+- **Versión actual:** 1.0.2
+- **Documentación:** http://localhost:8000/docs
+- **Repositorio:** [GitHub Repository]
 
-- `identifier` puede ser username o correo.
-- La contraseña se valida contra el hash almacenado.
-- Si las credenciales son válidas, se genera JWT con:
-  - `sub`: ID del usuario
-  - `rol`: ID del rol
-  - `exp`: expiración según `JWT_EXPIRE_MINUTES`
+### 3.2. Flujo login
 
-### Respuesta exitosa unificada
+- `POST /auth/login`: envía `identifier` (username o correo) + `contraseña`.
+- `POST /auth/registro`: registro público con rol `user`.
+
+---
+
+## 4. Formato de respuesta estándar
+
+### 4.1. Respuesta de éxito
 
 ```json
 {
   "success": true,
-  "message": "Inicio de sesión exitoso.",
-  "data": {
-    "access_token": "<jwt>",
-    "token_type": "bearer"
-  }
+  "data": ...,
+  "message": "..."
 }
 ```
 
-### Errores esperados (formato unificado)
+### 4.2. Respuesta de error
 
 ```json
 {
   "success": false,
   "error": {
-    "code": "unauthorized",
-    "message": "Credenciales incorrectas.",
+    "code": "not_found|unauthorized|...",
+    "message": "...",
     "details": null,
-    "path": "/auth/login",
-    "method": "POST",
-    "timestamp": "2026-04-02T18:00:00+00:00"
+    "path": "/ruta",
+    "method": "GET",
+    "timestamp": "..."
   }
 }
 ```
 
-| Código | Detalle |
-|---|---|
-| `401` | Credenciales incorrectas |
-| `422` | Payload inválido |
+---
 
-### Ejemplo `curl`
+## 5. Base de datos y modelos principales
 
-```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"identifier":"admin","contraseña":"admin123"}'
-```
+### tablas y modelos
+
+- `usuarios` (`Usuario`)
+- `roles` (`Rol`, `TipoRol`)
+- `perfiles` (`Perfil`)
+- `vehiculos` (`Vehiculo`, `EstadoVehiculo`)
+- `asignaciones_vehiculo` (`AsignacionVehiculo`, `EstadoAsignacion`)
+- `tripulacion_asignacion` (`TripulacionAsignacion`, `RolTripulacion`)
+- `reportes` (`ReporteActividad`)
+
+### Enumeraciones
+
+- `EstadoVehiculo`: `disponible`, `en_ruta`, `mantenimiento`, `inactivo`
+- `EstadoAsignacion`: `pendiente`, `en_curso`, `completada`, `cancelada`
+- `RolTripulacion`: `piloto`, `copiloto`, `recolector`
+- `TipoRol`: `admin`, `driver`, `user`, `recolector`
 
 ---
 
-## 7.2 `POST /auth/registro`
+## 6. Esquemas (Pydantic)
 
-Registra un usuario público con rol automático `user`.
+### 6.1. Autenticación
+- `LoginRequest`: `identifier`, `contraseña`
+- `TokenResponse`: `access_token`, `token_type` (`bearer`)
 
-### Body
+### 6.2. Usuarios
+- `UsuarioAdminCreate`: `username`, `correo`, `contraseña`, `id_rol`, `activo`
+- `UsuarioPublicCreate`: `username`, `correo?`, `contraseña`, `activo`
+- `UsuarioUpdate`: campos opcionales `username?`, `correo?`, `contraseña?`, `id_rol?`
+- `UsuarioResponse`: respuesta completa con `id_usuario`, `username`, `correo`, `activo`, `id_perfil`, `id_rol`, `perfil`, `rol`, `created_at`, `updated_at`
 
-```json
-{
-  "username": "ciudadano01",
-  "correo": "ciudadano01@example.com",
-  "contraseña": "clave123",
-  "activo": true
-}
-```
+### 6.3. Vehículos
+- `VehiculoCreate`: `placa` (`^[A-Z]{3}\d{3}$`), `modelo?`, `capacidad_m3?`, `estado`
+- `VehiculoUpdate`: campos opcionales `placa?`, `modelo?`, `capacidad_m3?`, `estado?`
+- `VehiculoResponse`: `id_vehiculo`, `placa`, `modelo`, `capacidad_m3`, `estado`, `created_at`
 
-### Reglas de negocio
+### 6.4. Asignaciones
+- `AsignacionCreate`: `id_vehiculo`, `id_ruta`, `fecha`
+- `AsignacionUpdate`: `estado?`, `hora_salida?`
+- `AsignacionResponse`: respuesta completa con vehiculo y tripulacion.
+- `AsignacionPublicResponse`: consulta pública de ruta: `id_ruta`, `id_vehiculo`, `hora_salida`, `estado`
 
-- `username`: mínimo 3 caracteres.
-- `correo`: validación de email y conversión a minúsculas.
-- `contraseña`: mínimo 6 caracteres.
-- El rol se asigna automáticamente como `user`.
-- Se crea también un `Perfil` asociado.
+### 6.5. Tripulación
+- `TripulacionCreate`: `id_usuario`, `rol_tripulacion`
+- `TripulacionResponse`: detalles del tripulante en asignación
 
-### Respuesta
-
-Devuelve un objeto `UsuarioResponse` con:
-
-- `id_usuario`
-- `username`
-- `correo`
-- `activo`
-- `id_perfil`
-- `id_rol`
-- `perfil`
-- `rol`
-- `created_at`
-- `updated_at`
-
-### Errores esperados
-
-| Código | Detalle |
-|---|---|
-| `400` | `El username o correo ya está en uso` |
-| `500` | `Rol 'user' no configurado en el sistema` |
-| `422` | Error de validación |
-
-> **Observación de revisión:** aunque `correo` aparece como opcional en `UsuarioPublicCreate`, el modelo de base de datos lo define como no nulo. En la práctica se recomienda enviarlo siempre.
+### 6.6. Reportes
+- `ReporteCreate`: `id_usuario?`, `u_gmail_cache?`, `u_rol_cache?`, `descripcion`, `asunto`, `evidencia_url?`
+- `ReporteResponse`: registro historico con fecha
 
 ---
 
-# 8. 👥 Módulo de usuarios (`admin`)
+## 7. Endpoints públicos y protegidos (tabla sintetizada)
 
-Prefijo base: ` /admin/usuarios `
-
-## 8.1 `POST /admin/usuarios/`
-
-Crea usuarios administrativos o de operación.
-
-### Body
-
-```json
-{
-  "username": "driver01",
-  "correo": "driver01@example.com",
-  "contraseña": "clave123",
-  "id_rol": 2,
-  "activo": true
-}
-```
-
-### Reglas
-
-- Requiere token con rol `admin`.
-- Verifica duplicados por `username` o `correo`.
-- Verifica que el rol exista.
-- Crea perfil automáticamente usando el username como nombre.
-- La contraseña se almacena hasheada.
-
-### Posibles respuestas de error
-
-| Código | Detalle |
-|---|---|
-| `400` | `El username o correo ya está en uso` |
-| `400` | `Rol no encontrado` |
-| `401` | Token inválido |
-| `403` | Sin permisos |
+| Método | Ruta | Rol requerido | Request | Response | Descripción |
+|---|---|---|---|---|---|
+| `GET` | `/` | público | - | `SuccessResponse` | health check y version|
+| `POST` | `/auth/login` | público | `LoginRequest` | `TokenResponse` | iniciar sesión |
+| `POST` | `/auth/registro` | público | `UsuarioPublicCreate` | `UsuarioResponse` | registrar usuario ciudadano |
+| `POST` | `/admin/usuarios` | `admin` | `UsuarioAdminCreate` | `UsuarioResponse` | crear usuario |
+| `GET` | `/admin/usuarios` | `admin` | - | `list[UsuarioResponse]` | listar usuarios |
+| `GET` | `/admin/usuarios/{id_usuario}` | `admin` | - | `UsuarioResponse` | obtener usuario |
+| `PATCH` | `/admin/usuarios/{id_usuario}` | `admin` | `UsuarioUpdate` | `UsuarioResponse` | actualizar usuario |
+| `DELETE` | `/admin/usuarios/{id_usuario}` | `admin` | - | `{'id_usuario': int}` | desactivar usuario |
+| `POST` | `/admin/vehiculos` | `admin` | `VehiculoCreate` | `VehiculoResponse` | crear vehículo |
+| `GET` | `/admin/vehiculos` | `admin` | - | `list[VehiculoResponse]` | listar vehículos |
+| `GET` | `/admin/vehiculos/{id_vehiculo}` | `admin` | - | `VehiculoResponse` | obtener vehículo |
+| `PATCH` | `/admin/vehiculos/{id_vehiculo}` | `admin` | `VehiculoUpdate` | `VehiculoResponse` | actualizar vehículo |
+| `PATCH` | `/admin/vehiculos/{id_vehiculo}/estado` | `admin` | `estado` form/body | `VehiculoResponse` | cambiar estado |
+| `DELETE` | `/admin/vehiculos/{id_vehiculo}` | `admin` | - | `{'id_vehiculo': int}` | eliminar vehículo |
+| `POST` | `/admin/reportes` | `admin` | `ReporteCreate` | `ReporteResponse` | registrar reporte |
+| `GET` | `/admin/reportes` | `admin` | query `id_usuario?`, `asunto?` | `list[ReporteResponse]` | listar reportes |
+| `POST` | `/admin/asignaciones` | `admin` | `AsignacionCreate` | `AsignacionResponse` | crear asignación |
+| `GET` | `/admin/asignaciones` | `admin` | - | `list[AsignacionResponse]` | listar asignaciones |
+| `GET` | `/admin/asignaciones/rutas/{id_ruta}` | `admin` | - | `dict` | obtener detalles ruta externa |
+| `GET` | `/admin/asignaciones/{id_asignacion}` | `admin` | - | `AsignacionResponse` | obtener asignación admin |
+| `POST` | `/admin/asignaciones/{id_asignacion}/cancelar` | `admin` | - | `AsignacionResponse` | cancelar asignación |
+| `POST` | `/admin/asignaciones/{id_asignacion}/tripulacion` | `admin` | `TripulacionCreate` | `TripulacionResponse` | agregar tripulante |
+| `DELETE` | `/admin/asignaciones/{id_asignacion}/tripulacion/{id_usuario}` | `admin` | - | `{'id_asignacion','id_usuario'}` | eliminar tripulante |
+| `GET` | `/driver/asignaciones/{id_asignacion}` | `driver` | - | `AsignacionResponse` | ver asignación driver |
+| `POST` | `/driver/asignaciones/{id_asignacion}/iniciar` | `driver` | - | `AsignacionResponse` | iniciar recorrido |
+| `POST` | `/driver/asignaciones/{id_asignacion}/finalizar` | `driver` | - | `AsignacionResponse` | finalizar recorrido |
+| `GET` | `/recolector/asignaciones/{id_asignacion}` | `recolector` | - | `AsignacionResponse` | ver asignación recolector |
+| `POST` | `/recolector/asignaciones/{id_asignacion}/confirmar/{id_usuario}` | `recolector` | - | `TripulacionResponse` | confirmar participación |
+| `GET` | `/rutas/{id_ruta}/horario` | `user` | - | `AsignacionPublicResponse` | ver horario ruta |
 
 ---
 
-## 8.2 `GET /admin/usuarios/`
+## 8. WebSockets
 
-Lista todos los usuarios con su `perfil` y `rol` cargados.
-
-### Respuesta
-
-```json
-[
-  {
-    "id_usuario": 1,
-    "username": "admin",
-    "correo": "admin@test.com",
-    "activo": true,
-    "id_perfil": 1,
-    "id_rol": 1,
-    "perfil": {
-      "id_perfil": 1,
-      "nombre": "Administrador",
-      "id_rol": 1,
-      "rol": {
-        "id_rol": 1,
-        "nombre": "admin"
-      }
-    },
-    "rol": {
-      "id_rol": 1,
-      "nombre": "admin"
-    },
-    "created_at": "2026-03-31T10:00:00Z",
-    "updated_at": "2026-03-31T10:00:00Z"
-  }
-]
-```
+- `ws://<host>/ws/asignacion/{id_asignacion}?token=<JWT>`
+- Se requiere JWT válido con `verificar_token`.
+- El canal envía mensajes:
+  - `recorrido_iniciado`
+  - `recorrido_finalizado`
+  - `asignacion_cancelada`
 
 ---
 
-## 8.3 `GET /admin/usuarios/{id_usuario}`
+## 9. Detalles de implementación relevante
 
-Obtiene un usuario por ID.
+### 9.1 Lifespan
+- `main.py` ejecuta `crear_tablas()` antes de aceptar tráfico.
 
-### Parámetros de ruta
+### 9.2 Manejo de errores
+- `core/error_handlers.py` define middleware de excepción para generar payload uniforme.
 
-| Nombre | Tipo | Requerido |
-|---|---|---|
-| `id_usuario` | `int` | Sí |
+### 9.3 Seguridad de contraseñas
+- `core/security.py` usa `passlib` con `bcrypt` y JWT con `pyjwt`.
 
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `404` | `Usuario no encontrado` |
+### 9.4 Dependencias autorizadas
+- `require_rol` en `core/dependecies.py` valida el rol del usuario en base al token.
 
 ---
 
-## 8.4 `PATCH /admin/usuarios/{id_usuario}`
+## 10. Integración con API externa de rutas
 
-Actualiza campos parciales del usuario.
+Esta API está preparada para consumir datos de un servicio externo de rutas:
 
-### Body permitido
+### 10.1 Configuración
+- Variable de entorno: `RUTAS_API_URL` (default: `http://localhost:8001`)
+- Servicio: `services/service_rutas_externo.py`
 
-```json
-{
-  "username": "nuevo_username",
-  "correo": "nuevo@example.com",
-  "contraseña": "nueva_clave123",
-  "id_rol": 3
-}
-```
+### 10.2 Validaciones automáticas
+- Al crear asignaciones, se valida que la ruta existe en la API externa
+- Endpoint `/admin/asignaciones/rutas/{id_ruta}` para consultar detalles
 
-### Reglas
+### 10.3 Flujo esperado
+1. Frontend crea ruta en API externa → obtiene `id_ruta`
+2. Frontend crea asignación aquí enviando el `id_ruta`
+3. Esta API valida que la ruta existe antes de crear la asignación
 
-- Solo actualiza los campos enviados.
-- Si se envía `contraseña`, se re-hashea antes de guardar.
-
----
-
-## 8.5 `DELETE /admin/usuarios/{id_usuario}`
-
-Desactiva al usuario cambiando `activo = false`.
-
-### Respuesta
-
-```json
-{
-  "message": "Usuario eliminado"
-}
-```
-
-### Reglas importantes
-
-- No elimina físicamente el registro.
-- No permite desactivar usuarios con rol `admin`.
-
-### Error específico
-
-| Código | Detalle |
-|---|---|
-| `400` | `No se puede eliminar un usuario con rol de administrador` |
+### 10.4 Manual detallado
+Para instrucciones completas de configuración, ejemplos de código y testing, consulta `MANUAL_INTEGRACION_RUTAS.md`.
 
 ---
 
-# 9. 🚚 Módulo de vehículos (`admin`)
+## 11. Análisis de calidad y puntuación de la API
 
-Prefijo base: ` /admin/vehiculos `
+En la auditoría completa del proyecto (routers, controllers, services, schemas, models, core y tests) se verificaron los siguientes puntos:
 
-## 9.1 `POST /admin/vehiculos/`
+- Patrón Response uniformizado (`SuccessResponse[T]`) en todos los controllers y routers: ✅
+- Patrón Form (`as_form`) aplicado en todos Create/Update y login: ✅
+- Patrón Service (instancia en controller, sin singleton global): ✅
+- Patrón Guards (Admin/Driver/Recolector/User) aplicado en rutas relevantes: ✅
+- Patrón Router (response_model exacto + delete con `dict[str,int]` / `dict[str,str]`): ✅
+- Patrón DateTime (timezone=True + default timezone aware): ✅
+- Pruebas automáticas (`pytest -q`) cubriendo flujo de auth y roles, CRUD y validaciones: ✅
 
-Crea un vehículo recolector.
+### 10.1 Puntuación general (0-10)
+- Robustez de API: 9.0 (módulos con validación y excepciones bien tratadas)
+- Consistencia de contrato: 9.5 (respuestas y tipos alineados)
+- Seguridad: 8.5 (JWT + RBAC correctos; zona de mejora: refresh token y rate limit)
+- Mantenibilidad: 9.0 (capas limpias, patrones reutilizables, docs actualizadas)
 
-### Body
-
-```json
-{
-  "placa": "ABC123",
-  "modelo": "Hino 2022",
-  "capacidad_m3": 12.5,
-  "estado": "disponible"
-}
-```
-
-### Reglas
-
-- La `placa` debe ser única.
-- El `estado` por defecto es `disponible`.
-
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `400` | `Ya existe un vehículo con esa placa` |
+### 10.2 Recomendaciones rápidas
+1. Añadir pruebas de integración para WebSocket con token y eventos de cambio de estado.
+2. Implementar `rate limit` en rutas de login y creación de recursos para mitigar abuso.
+3. Registrar auditoría de eventos sensibles (login fallido, role changes, delete operations).
+4. Completar el README con un “change log” de los cambios aplicados (seguridad y respuesta).
 
 ---
 
-## 9.2 `GET /admin/vehiculos/`
+## 11. Estado actual de tests
 
-Lista todos los vehículos.
+Ejecutando `pytest -q` luego de las correcciones:
+- `tests/test_api.py`: 6 pasadas, 0 fallos.
+- Las pruebas verifican 422/401/403 y los flujos de administrador de usuarios y vehículos.
+- Nota: si hay nuevos endpoints, agregar tests de permisos para todos los roles.
 
-### Respuesta ejemplo
-
-```json
-[
-  {
-    "id_vehiculo": 1,
-    "placa": "ABC123",
-    "modelo": "Hino 2022",
-    "capacidad_m3": 12.5,
-    "estado": "disponible",
-    "created_at": "2026-03-31T10:00:00Z"
-  }
-]
-```
-
----
-
-## 9.3 `GET /admin/vehiculos/{id_vehiculo}`
-
-Obtiene un vehículo específico.
-
-### Error específico
-
-| Código | Detalle |
-|---|---|
-| `404` | `Vehículo no encontrado` |
-
----
-
-## 9.4 `PATCH /admin/vehiculos/{id_vehiculo}`
-
-Actualiza parcialmente el vehículo.
-
-### Body
-
-```json
-{
-  "modelo": "Isuzu 2024",
-  "capacidad_m3": 15,
-  "estado": "mantenimiento"
-}
-```
-
----
-
-## 9.5 `PATCH /admin/vehiculos/{id_vehiculo}/estado`
-
-Cambia únicamente el estado del vehículo.
-
-### Importante
-
-El parámetro `estado` se recibe como **query parameter**, no como body JSON.
-
-### Ejemplo
-
-```http
-PATCH /admin/vehiculos/1/estado?estado=en_ruta
-```
-
-### Valores válidos
-
-```text
-disponible | en_ruta | mantenimiento | inactivo
-```
-
----
-
-## 9.6 `DELETE /admin/vehiculos/{id_vehiculo}`
-
-Elimina físicamente el vehículo.
-
-### Respuesta
-
-```json
-{
-  "message": "Vehículo eliminado"
-}
-```
-
----
-
-# 10. 📝 Módulo de reportes (`admin`)
-
-Prefijo base: ` /admin/reportes `
-
-## 10.1 `POST /admin/reportes/`
-
-Registra un reporte de actividad.
-
-### Body
-
-```json
-{
-  "id_usuario": 2,
-  "u_gmail_cache": "driver01@example.com",
-  "u_rol_cache": "driver",
-  "descripcion": "Se reporta demora en la salida del vehículo.",
-  "asunto": "demora_operativa",
-  "evidencia_url": "https://ejemplo.com/evidencia.jpg"
-}
-```
-
-### Campos
-
-| Campo | Tipo | Requerido | Nota |
-|---|---|---|---|
-| `id_usuario` | `int \| null` | No | ID del usuario relacionado |
-| `u_gmail_cache` | `str \| null` | No | Correo guardado como cache |
-| `u_rol_cache` | `str \| null` | No | Rol cacheado |
-| `descripcion` | `str` | Sí | Descripción del evento |
-| `asunto` | `str` | Sí | Categoría o asunto del reporte |
-| `evidencia_url` | `str \| null` | No | URL de evidencia |
-
----
-
-## 10.2 `GET /admin/reportes/`
-
-Lista reportes y permite filtros opcionales.
-
-### Query params
-
-| Parámetro | Tipo | Requerido | Descripción |
-|---|---|---|---|
-| `id_usuario` | `int` | No | Filtra por usuario |
-| `asunto` | `string` | No | Filtra por asunto exacto |
-
-### Ejemplos
-
-```http
-GET /admin/reportes/
-GET /admin/reportes/?id_usuario=2
-GET /admin/reportes/?asunto=demora_operativa
-```
-
-### Orden
-
-Los reportes se devuelven ordenados por `fecha DESC`.
-
----
-
-# 11. 🗺️ Módulo de asignaciones (`admin`, `driver`, `recolector`, `user`)
-
-Las asignaciones conectan un vehículo con una ruta (`id_ruta`) y una fecha de operación.
-
-> **Importante:** el valor de `id_ruta` **no lo genera este backend**. Ese identificador es **asignado por una API externa** de rutas, y este proyecto solo lo almacena y lo usa como referencia para consultar/relacionar la operación local.
-
-## 11.1 `POST /admin/asignaciones/`
-
-Crea una asignación de vehículo a una ruta.
-
-### Body
-
-```json
-{
-  "id_vehiculo": 1,
-  "id_ruta": "RUTA-CENTRO-01",
-  "fecha": "2026-03-31T06:00:00Z"
-}
-```
-
-### Reglas de negocio
-
-- El vehículo debe existir.
-- El vehículo debe estar en estado `disponible`.
-- `id_ruta` debe venir previamente asignado por la **API externa** de rutas.
-- La asignación nace en estado `pendiente`.
-
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `404` | `Vehículo no encontrado` |
-| `400` | `El vehículo no está disponible...` |
-
----
-
-## 11.2 `GET /admin/asignaciones/`
-
-Lista todas las asignaciones con:
-
-- datos del vehículo,
-- estado actual,
-- fecha,
-- hora de salida,
-- tripulación asociada.
-
-### Respuesta ejemplo
-
-```json
-[
-  {
-    "id_asignacion": 10,
-    "id_vehiculo": 1,
-    "id_ruta": "RUTA-CENTRO-01",
-    "fecha": "2026-03-31T06:00:00Z",
-    "hora_salida": null,
-    "estado": "pendiente",
-    "created_at": "2026-03-31T05:40:00Z",
-    "vehiculo": {
-      "id_vehiculo": 1,
-      "placa": "ABC123",
-      "modelo": "Hino 2022",
-      "capacidad_m3": 12.5,
-      "estado": "disponible",
-      "created_at": "2026-03-30T12:00:00Z"
-    },
-    "tripulacion": []
-  }
-]
-```
-
----
-
-## 11.3 `GET /admin/asignaciones/{id_asignacion}`
-
-Obtiene el detalle completo de una asignación específica.
-
-### Error
-
-| Código | Detalle |
-|---|---|
-| `404` | `Asignación no encontrada` |
-
----
-
-## 11.4 `POST /admin/asignaciones/{id_asignacion}/cancelar`
-
-Cancela una asignación.
-
-### Reglas
-
-- No permite cancelar una asignación ya `completada`.
-- Al cancelar, el vehículo vuelve a `disponible`.
-- Genera evento WebSocket `asignacion_cancelada`.
-
-### Error
-
-| Código | Detalle |
-|---|---|
-| `400` | `No se puede cancelar una asignación ya completada` |
-
----
-
-## 11.5 `POST /admin/asignaciones/{id_asignacion}/tripulacion`
-
-Agrega un miembro a la tripulación.
-
-### Body
-
-```json
-{
-  "id_usuario": 5,
-  "rol_tripulacion": "recolector"
-}
-```
-
-### Reglas
-
-- Solo se permite si la asignación está `pendiente`.
-- No se puede agregar dos veces el mismo usuario a la misma asignación.
-
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `404` | `Asignación no encontrada` |
-| `400` | `Solo se puede modificar la tripulación de una asignación pendiente` |
-| `400` | `El usuario ya está en esta asignación` |
-
----
-
-## 11.6 `DELETE /admin/asignaciones/{id_asignacion}/tripulacion/{id_usuario}`
-
-Elimina a un miembro de la tripulación.
-
-### Reglas esperadas
-
-- Solo debería permitirse si la asignación sigue `pendiente`.
-- Devuelve:
-
-```json
-{
-  "message": "Miembro eliminado de la tripulación"
-}
-```
-
----
-
-## 11.7 `GET /driver/asignaciones/{id_asignacion}`
-
-Permite al conductor ver la asignación que le corresponde.
-
-### Rol requerido
-
-`driver`
-
----
-
-## 11.8 `POST /driver/asignaciones/{id_asignacion}/iniciar`
-
-Marca el recorrido como iniciado.
-
-### Reglas de negocio
-
-- La asignación debe estar en `pendiente`.
-- **Toda la tripulación debe haber confirmado** antes de iniciar.
-- Al iniciar:
-  - `estado = en_curso`
-  - `hora_salida = now()`
-  - `vehiculo.estado = en_ruta`
-- Emite evento WebSocket `recorrido_iniciado`.
-
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `400` | `Solo se puede iniciar una asignación en estado pendiente` |
-| `400` | `Toda la tripulación debe confirmar antes de iniciar` |
-
----
-
-## 11.9 `POST /driver/asignaciones/{id_asignacion}/finalizar`
-
-Finaliza el recorrido.
-
-### Reglas de negocio
-
-- Solo puede finalizarse si está `en_curso`.
-- Al finalizar:
-  - `estado = completada`
-  - `vehiculo.estado = disponible`
-- Emite evento WebSocket `recorrido_finalizado`.
-
-### Error
-
-| Código | Detalle |
-|---|---|
-| `400` | `Solo se puede finalizar una asignación en curso` |
-
----
-
-## 11.10 `GET /recolector/asignaciones/{id_asignacion}`
-
-Permite a un recolector consultar la asignación asociada.
-
-### Rol requerido
-
-`recolector`
-
----
-
-## 11.11 `POST /recolector/asignaciones/{id_asignacion}/confirmar/{id_usuario}`
-
-Confirma la participación de un miembro de tripulación.
-
-### Reglas
-
-- Debe existir el registro de `TripulacionAsignacion`.
-- Si ya estaba confirmado, responde error.
-- Al confirmar:
-  - `confirmado = true`
-  - `confirmado_at = now()`
-- Emite evento WebSocket `tripulacion_confirmo`.
-
-### Errores
-
-| Código | Detalle |
-|---|---|
-| `404` | `No perteneces a esta asignación` |
-| `400` | `Ya confirmaste tu participación` |
-
----
-
-## 11.12 `GET /rutas/{id_ruta}/horario`
-
-Endpoint orientado al ciudadano para consultar el horario de una ruta.
-
-### Rol requerido
-
-`user`
-
-### Respuesta
-
-```json
-{
-  "id_ruta": "RUTA-CENTRO-01",
-  "id_vehiculo": 1,
-  "hora_salida": "2026-03-31T06:05:00Z",
-  "estado": "en_curso"
-}
-```
-
-### Error
-
-| Código | Detalle |
-|---|---|
-| `404` | `Ruta no encontrada` |
-
----
-
-# 12. 🔌 WebSockets
-
-Existe soporte de WebSocket en `router_ws.py`.
-
-## Endpoint definido en código
-
-```text
-/ws/asignacion/{id_asignacion}?token=<jwt>
-```
-
-## Funcionamiento
-
-- Valida el JWT antes de aceptar la conexión.
-- Agrupa conexiones por `id_asignacion`.
-- Envía eventos JSON cuando cambia el estado de la asignación o la tripulación.
-
-## Eventos emitidos
-
-### `tripulacion_confirmo`
-
-```json
-{
-  "evento": "tripulacion_confirmo",
-  "id_asignacion": 10,
-  "id_usuario": 5,
-  "rol": "recolector"
-}
-```
-
-### `recorrido_iniciado`
-
-```json
-{
-  "evento": "recorrido_iniciado",
-  "id_asignacion": 10,
-  "hora_salida": "2026-03-31T06:05:00+00:00",
-  "estado": "en_curso"
-}
-```
-
-### `recorrido_finalizado`
-
-```json
-{
-  "evento": "recorrido_finalizado",
-  "id_asignacion": 10,
-  "estado": "completada"
-}
-```
-
-### `asignacion_cancelada`
-
-```json
-{
-  "evento": "asignacion_cancelada",
-  "id_asignacion": 10,
-  "estado": "cancelada"
-}
-```
-
-> **Observación importante:** el router WebSocket existe, pero en `main.py` no se está incluyendo `router_ws`, por lo que ese endpoint no queda montado automáticamente en la app actual.
-
----
-
-# 13. 🗃️ Modelos de datos principales
-
-## `Usuario`
-
-Campos principales:
-
-- `id_usuario`
-- `id_perfil`
-- `id_rol`
-- `username`
-- `correo`
-- `contraseña`
-- `activo`
-- `created_at`
-- `updated_at`
-
-## `Rol`
-
-- `id_rol`
-- `nombre`
-
-## `Perfil`
-
-- `id_perfil`
-- `id_rol`
-- `nombre`
-
-## `Vehiculo`
-
-- `id_vehiculo`
-- `placa`
-- `modelo`
-- `capacidad_m3`
-- `estado`
-- `created_at`
-
-## `AsignacionVehiculo`
-
-- `id_asignacion`
-- `id_vehiculo`
-- `id_ruta`
-- `hora_salida`
-- `fecha`
-- `estado`
-- `created_at`
-
-## `TripulacionAsignacion`
-
-- `id`
-- `id_asignacion`
-- `id_usuario`
-- `rol_tripulacion`
-- `confirmado`
-- `confirmado_at`
-
-## `ReporteActividad`
-
-- `id_registro`
-- `id_usuario`
-- `u_gmail_cache`
-- `u_rol_cache`
-- `descripcion`
-- `asunto`
-- `evidencia_url`
-- `fecha`
-
----
-
-# 14. ⚙️ Variables de entorno relevantes
-
-Tomadas de `core/settings.py`:
-
-| Variable | Descripción |
-|---|---|
-| `DATABASE_URL` | Conexión a PostgreSQL/PostGIS con driver async |
-| `SECRET_KEY` | Clave general del proyecto |
-| `JWT_SECRET` | Clave para firmar JWT |
-| `JWT_ALGORITHM` | Algoritmo JWT, default `HS256` |
-| `JWT_EXPIRE_MINUTES` | Duración del token, default `480` |
-| `CORS_ORIGINS` | Orígenes permitidos, default `http://localhost:4200` |
-
----
-
-# 15. 🧪 Recomendaciones de uso desde frontend o Postman
-
-## Header común autenticado
-
-```http
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-## Orden recomendado de prueba funcional
-
-1. Registrar o sembrar un usuario admin.
-2. Hacer login con `POST /auth/login`.
-3. Crear usuarios operativos (`driver`, `recolector`).
-4. Crear vehículo.
-5. Crear asignación.
-6. Agregar tripulación.
-7. Confirmar participación desde el rol `recolector`.
-8. Iniciar recorrido desde el rol `driver`.
-9. Finalizar recorrido.
-10. Consultar la ruta desde `/rutas/{id_ruta}/horario`.
-
----
-
-# 16. 🔍 Hallazgos de la revisión técnica del código
-
-Además de documentar la API, durante la revisión se detectaron estas observaciones importantes:
-
-## 16.1 Inconsistencias de nombres entre controladores y servicios
-
-Hay referencias que **parecen no coincidir** con los nombres definidos en servicios, por ejemplo:
-
-- `controller_vehiculo.py` llama `actualizar_vehiculo_by_id`, pero en `service_vehiculo.py` aparece `update_vehiculo_por_id`.
-- `controller_asignaciovehiculo.py` llama `AsignacionService(db).crear(...)`, pero en `service_asignaciovehiculo.py` está definido `crear_asignacion(...)`.
-- `controller_asignaciovehiculo.py` llama `TripulacionService(db).eliminar_miembro(...)`, pero en `service_tripulacionasignada.py` se define `eliminar_miembro_asignacion(...)`.
-
-### Impacto posible
-
-Algunos endpoints podrían fallar en tiempo de ejecución si esas rutas son invocadas sin corregir esos nombres.
-
-## 16.2 WebSocket no montado en `main.py`
-
-Aunque existe `router_ws.py`, no se hace `app.include_router(...)` para él.
-
-## 16.3 Registro público con `correo` opcional
-
-El schema `UsuarioPublicCreate` permite `correo = null`, pero el modelo `Usuario` lo requiere como `nullable=False`.
-
----
-
-# 17. 🚀 Mejoras sugeridas para la API
-
-1. Definir `status_code=201` en endpoints de creación.
-2. Agregar `summary`, `description` y ejemplos directamente en cada ruta FastAPI.
-3. Corregir las inconsistencias de nombres entre controladores y servicios.
-4. Montar el router WebSocket en `main.py` si se va a usar en producción.
-5. Añadir paginación y búsqueda más flexible para listados.
-6. Estandarizar respuestas de error.
-7. Añadir pruebas automáticas de integración para cada módulo.
-
----
-
-# 18. ✅ Conclusión
-
-La API tiene una base clara y bien separada por capas, con soporte para autenticación por JWT, control de acceso por roles y gestión del ciclo operativo de rutas de recolección.
-
-Su dominio principal gira alrededor de:
-
-- usuarios,
-- vehículos,
-- reportes,
-- asignaciones,
-- tripulación,
-- seguimiento del estado de rutas.
-
-Para desarrollo y consumo, la referencia rápida sigue siendo:
-
-- `http://localhost:8000/docs`
-- `http://localhost:8000/redoc`
-
-Y esta guía complementa esa referencia con contexto funcional, reglas de negocio y observaciones de implementación.

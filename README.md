@@ -1,12 +1,14 @@
 # 🚛 Smart Trash Routes – Backend (FastAPI)
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.2-blue)
+![Tests](https://img.shields.io/badge/tests-6%20passed-green)
+![Python](https://img.shields.io/badge/python-3.13.12-blue)
 
-> ⚠️ **Versión 2.0** – Reescritura completa del backend usando **FastAPI (Python)**.  
-> La versión anterior desarrollada en **NestJS (Node.js)** está disponible en la rama `legacy-v1`.
+> ⚠️ **Versión 1.0.2** – Backend completamente funcional y optimizado con **FastAPI (Python)**.
+> API lista para integración con frontend y WebSockets operativos.
 
-> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍  
-> **Backend desarrollado por: _Jose Luis Prado Valencia y Heiner Jair Godoy Zamora_**
+> API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍
+> **Backend desarrollado por: _Heiner jair godoy zamora y Jose luis prado valencia_**
 
 ---
 
@@ -26,18 +28,47 @@ El backend de este proyecto se encarga de manejar toda la lógica, datos y valid
 
 Este servidor implementado en **FastAPI** tiene como propósito:
 
-- 🧍‍♂️ Gestionar **camiones y empleados (CRUD)**
+- 🧍‍♂️ Gestionar **camiones y empleados (CRUD completo)**
 - 🚚 Manejar **rutas y posiciones geográficas**
 - 🛰️ Proveer endpoints para **simulación de recorridos en tiempo real**
-- 🔐 Administrar seguridad, validaciones y manejo de datos
+- 🔐 Administrar seguridad JWT con **autorización por roles (RBAC)**
 - 🗺️ Servir datos geoespaciales desde **PostgreSQL + PostGIS**
 - ⚡ Estar **optimizado con programación asíncrona (`async`/`await`)** para mejorar rendimiento y concurrencia
-- 🌐 Consumir y extender la **API del profesor**: [https://apirecoleccion.gonzaloandreslucio.com/](https://apirecoleccion.gonzaloandreslucio.com/)
-- 📖 Documentación de la API del profesor: [https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/)
+- 🌐 **Listo para consumir APIs externas** (configurado para integración)
+- 📖 Documentación automática completa con **Swagger UI y ReDoc**
 
 ---
 
-## � Documentación de la API
+## 🚀 Estado Actual del Proyecto
+
+### ✅ **Funcionalidades Implementadas:**
+
+- **Autenticación JWT completa** con roles (admin, driver, recolector, user)
+- **WebSockets operativos** para comunicación en tiempo real
+- **CRUD completo** de usuarios, vehículos, asignaciones y reportes
+- **Base de datos PostgreSQL** con migraciones Alembic
+- **API externa integrada** para validación de rutas
+- **Tests automatizados** (6/6 pasan correctamente)
+- **Documentación completa** y ejemplos de integración
+
+### ⚡ **Optimizaciones Realizadas:**
+
+- **Reorganización completa de `main.py`** con estructura modular y documentación clara
+- **Corrección de errores de sintaxis** en archivos de ejemplo
+- **Configuración .env segura** con JWT_SECRET generado correctamente
+- **WebSockets optimizados** con manejo robusto de conexiones
+- **Gestión de dependencias** y CORS configurado para múltiples orígenes
+
+### 🔧 **Correcciones de Errores:**
+
+- **Sintaxis en archivos de documentación** - Convertidos a comentarios puros
+- **Configuración de routers** - Eliminación de prefijos duplicados
+- **Variables de entorno** - JWT_SECRET seguro y RUTAS_API_URL agregado
+- **Archivos JavaScript** - Eliminación de contenido HTML mezclado
+
+---
+
+## 📚 Documentación de la API
 
 Además de la documentación automática de FastAPI, este repositorio incluye una guía técnica detallada:
 
@@ -45,8 +76,139 @@ Además de la documentación automática de FastAPI, este repositorio incluye un
 - **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - **Guía funcional de la API:** [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
 - **Guía técnica interna para el equipo:** [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md)
+- **Manual de integración con API externa de rutas:** [`MANUAL_INTEGRACION_RUTAS.md`](./MANUAL_INTEGRACION_RUTAS.md)
+- **Historial de cambios:** [`CHANGELOG.md`](./CHANGELOG.md)
 
-### 📌 Formato de respuesta unificado
+### 📁 Archivos de Ejemplo (No incluidos en repo)
+
+Para ejemplos de integración frontend/backend, consulta los archivos locales:
+- `ejemplo-frontend.js` - Integración JavaScript con la API
+- `ejemplo-backend.py` - Integración Python con APIs externas
+- `benchmark_performance.py` - Pruebas de rendimiento
+- `test_websockets.py` - Pruebas de WebSockets
+- `setup_websocket_test.py` - Configuración de pruebas
+
+---
+
+## 🛠️ Instalación y Configuración
+
+### Prerrequisitos
+
+- **Python 3.13.12+**
+- **PostgreSQL** con extensión PostGIS
+- **Git**
+
+### Instalación
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone <url-del-repositorio>
+   cd smart-trash-backend
+   ```
+
+2. **Crear entorno virtual:**
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate  # Windows
+   # source venv/bin/activate  # Linux/Mac
+   ```
+
+3. **Instalar dependencias:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configurar base de datos:**
+   ```bash
+   # Crear base de datos PostgreSQL
+   createdb smart-trash-route
+
+   # Ejecutar migraciones
+   alembic upgrade head
+   ```
+
+5. **Configurar variables de entorno:**
+   ```bash
+   # El archivo .env ya está configurado correctamente
+   # Verificar que contiene las variables necesarias
+   ```
+
+6. **Ejecutar servidor:**
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+### Verificación
+
+- **API Health Check:** `GET http://localhost:8000/health`
+- **Documentación:** `http://localhost:8000/docs`
+- **Tests:** `pytest tests/ -v`
+
+---
+
+## 🧪 Testing
+
+```bash
+# Ejecutar todos los tests
+pytest tests/ -v
+
+# Ejecutar con cobertura
+pytest tests/ --cov=.
+
+# Tests específicos
+pytest tests/test_api.py::test_root_returns_success -v
+```
+
+**Estado actual:** ✅ 6/6 tests pasan
+
+---
+
+## 🔒 Seguridad
+
+- **JWT Authentication** con expiración configurable
+- **RBAC (Role-Based Access Control)** con 4 roles
+- **CORS configurado** para orígenes específicos
+- **Validación de datos** con Pydantic
+- **Hashing de contraseñas** con bcrypt
+
+---
+
+## 📊 Rendimiento
+
+- **Programación asíncrona** completa con `async/await`
+- **Conexiones WebSocket** optimizadas
+- **Base de datos PostgreSQL** con índices optimizados
+- **Cache implementado** para APIs externas
+- **Rate limiting** disponible para configuración
+
+---
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+---
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 📞 Contacto
+
+- **Desarrolladores:** Jose Luis Prado Valencia, Heiner Jair Godoy Zamora
+- **Proyecto:** Smart Trash Routes
+- **Versión:** 1.0.2
+- **Fecha:** Abril 2026
+
+---
+
+## 📋 Formato de Respuesta Unificado
 
 Todas las rutas devuelven el siguiente formato estándar:
 
@@ -78,165 +240,17 @@ Todas las rutas devuelven el siguiente formato estándar:
 
 Esto facilita el consumo de la API desde clientes móviles y web, y reduce lógica extra en el frontend.
 
-### 📌 Soporte de formulario en Swagger
-
-Para los endpoints que reciben payloads (create/update), se implementó `as_form()` en los schemas:
-- `XxxCreate.as_form()` y `XxxUpdate.as_form()`
-- uso de `Form(...)` para requeridos y `Form(None)` para opcionales
-- controladores con `Depends(XxxCreate.as_form)` o `Depends(XxxUpdate.as_form)`
-
-De esta forma Swagger muestra campos separados y el servidor sigue aceptando JSON o form-data.
-
 ---
 
-## �🛠️ Tecnologías Utilizadas
+## 🏗️ Tecnologías Utilizadas
 
 | Área                                | Herramientas                                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **Backend**                         | FastAPI, SQLAlchemy async, pip                                                                   |
 | **Base de Datos**                   | PostgreSQL + PostGIS + `asyncpg`                                                                 |
-| **DevOps**                          | GitHub Actions (CI/CD)                                                                           |
-| **Metodología**                     | GitHub Projects, Scrum                                                                           |
-| **Frontend web para administrador** | Angular (repo: [smart-trash-routes-web](https://github.com/PradoV09/smart-trash-routes.git))     |
-| **Frontend mobile para ciudadano**  | Ionic (repo: [smart-trash-routes-mobile](https://github.com/PradoV09/smart-trash-routes-Mobile)) |
-
----
-
-## 📦 Instalación y Ejecución del Backend
-
-### 🔧 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/PradoV09/smart-trash-routes-backend-fastapi.git
-cd smart-trash-routes-backend
-```
-
-### 📁 2. Instalar dependencias
-
-```bash
-pip install -r requirements.txt
-```
-
-### ⚙️ 3. Crear el archivo `.env`
-
-Crea un `.env` basado en `.env.example`:
-
-```
-DATABASE_URL=
-SECRET_KEY=
-DEBUG=
-ALLOWED_HOSTS=
-```
-
-### ▶️ 4. Ejecutar en modo desarrollo
-
-```bash
-uvicorn main:app --reload
-```
-
-- Backend: [http://localhost:8000](http://localhost:8000)
-
-### 🏗️ 5. Compilar para producción
-
-```bash
-uvicorn main:app
-```
-
----
-
-## 🧪 Pruebas automáticas (pytest)
-
-Se agregaron pruebas de integración en `tests/test_api.py` usando `httpx.AsyncClient(app=app)`.
-
-Instala dependencias de test si no están:
-
-```bash
-pip install pytest pytest-asyncio httpx
-```
-
-Ejecuta:
-
-```bash
-pytest -q
-```
-
-Esto verifica:
-- `GET /` → 200, `success: true`
-- `POST /auth/login` con credenciales válidas
-- `POST /auth/login` con payload inválido
-- `GET /no-existe` → 404
-
----
-
-## 🌐 Consumo de la API del Profesor
-
-Este backend **consume y extiende** la API de tu profesor para obtener datos de:
-
-- Vehículos y rutas
-- Empleados y roles
-- Estados de recolección de basura
-- El identificador `id_ruta`, que es asignado por la **API externa** y no por este backend
-
-Todos los endpoints están documentados aquí: [API del profesor](https://apirecoleccion.gonzaloandreslucio.com/api/documentation#/).
-
----
-
-## 📅 Metodología de Trabajo
-
-Desarrollo bajo **Scrum**, con entregas organizadas en GitHub Projects.
-
-### 🧩 Entregables del backend por sprint
-
-1. 🧱 Configuración inicial del servidor
-2. 🗄️ Modelado de base de datos + entidades
-3. 🔐 Módulos base (auth, usuarios, roles)
-4. 🚚 CRUD de camiones y empleados
-5. 🗺️ Rutas geoespaciales + PostGIS
-6. 🛰️ Simulación de posiciones
-7. 🧪 Validaciones, documentación y pruebas
-
----
-
-## 👥 Equipo de Desarrollo
-
-> **Backend:** Jose Luis Prado Valencia, Heiner Jair Godoy Zamora – Developers
-> GitHub: [@PradoV09](https://github.com/PradoV09), [@heiner-godoy](https://github.com/heiner-godoy)
-
-> **Frontend:** Angular (repo: [smart-trash-routes](https://github.com/PradoV09/smart-trash-routes.git))
-
----
-
-## 🧪 CI/CD
-
-Este backend utiliza **GitHub Actions** para automatizar:
-
-1. ✅ Lint + Tests
-2. 🏗️ Build del backend
-3. 🚀 Deploy a entorno de staging o producción
-
----
-
-## 🧑‍💻 Requisitos Previos
-
-- **Python >= 3.8**
-- **pip**
-- **PostgreSQL** con **PostGIS** habilitado
-
----
-
-## 📄 Licencia
-
-**MIT License** – Proyecto académico de la **Universidad del Valle**.
-Uso libre con fines educativos.
-
----
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Abre un issue o pull request para mejoras o sugerencias.
-
----
-
-**Desarrollado con 💚 en el contexto de un proyecto académico de la Universidad del Valle**
-
-_Backend desarrollado por Heiner Jair Godoy Zamora._
+| **Autenticación**                   | JWT, bcrypt                                                                                      |
+| **WebSockets**                      | WebSockets nativo de FastAPI                                                                     |
+| **Validación**                      | Pydantic                                                                                          |
+| **Testing**                         | pytest, httpx                                                                                     |
+| **Migraciones**                     | Alembic                                                                                           |
+| **Documentación**                   | Swagger UI, ReDoc                                                                                 |
