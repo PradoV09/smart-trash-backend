@@ -36,8 +36,8 @@ async def crear_tablas():
     import models.model_perfiles
     import models.model_reportes
     import models.model_vehiculo
-    import models.model_asignacionvehiculo
-    import models.model_tripulacionasignacion
+    import models.model_asignacionrutas
+    import models.model_asignaciontripulacion
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

@@ -10,10 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
-from models.model_tripulacionasignacion import TripulacionAsignacion
-from models.model_asignacionvehiculo import AsignacionVehiculo, EstadoAsignacion
-from schemas.schema_tripulacionasignada import TripulacionCreate
-from core.websocket_manager import ws_manager  # ✅ para el broadcast de confirmación
+
+from models.model_asignacionrutas import AsignacionRutas, EstadoAsignacion
+from models.model_asignaciontripulacion import TripulacionAsignacion
+from schemas.schema_asignaciontripulacion import TripulacionCreate
+from core.websocket_manager import ws_manager
 
 
 class TripulacionService:
@@ -21,11 +22,11 @@ class TripulacionService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _verificar_asignacion_pendiente(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def _verificar_asignacion_pendiente(self, id_asignacion: int) -> AsignacionRutas:
         """Asegura que la asignación exista y aún pueda modificarse."""
         result = await self.db.execute(
-            select(AsignacionVehiculo).where(
-                AsignacionVehiculo.id_asignacion == id_asignacion
+            select(AsignacionRutas).where(
+                AsignacionRutas.id_asignacion == id_asignacion
             )
         )
         asignacion = result.scalar_one_or_none()
@@ -118,4 +119,28 @@ class TripulacionService:
             )
         await self.db.delete(miembro)
         await self.db.flush()
-        
+
+    async def obtener_tripulacion_asignacion(self, id_asignacion: int) -> list[TripulacionAsignacion]:
+        """Obtiene todos los miembros de la tripulación de una asignación."""
+        result = await self.db.execute(
+            select(TripulacionAsignacion).where(
+                TripulacionAsignacion.id_asignacion == id_asignacion
+            )
+        )
+        return list(result.scalars().all())
+
+    async def obtener_miembro_tripulacion(self, id_asignacion: int, id_usuario: int) -> TripulacionAsignacion:
+        """Obtiene los datos de un miembro específico de la tripulación."""
+        result = await self.db.execute(
+            select(TripulacionAsignacion).where(
+                TripulacionAsignacion.id_asignacion == id_asignacion,
+                TripulacionAsignacion.id_usuario == id_usuario
+            )
+        )
+        miembro = result.scalar_one_or_none()
+        if not miembro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró al usuario {id_usuario} en la tripulación de la asignación {id_asignacion}.",
+            )
+        return miembro

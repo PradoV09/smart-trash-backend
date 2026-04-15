@@ -77,22 +77,6 @@ async def test_endpoint_protegido_token_invalido(transport):
 
 
 @pytest.mark.asyncio
-async def test_registro_campos_faltantes(transport):
-    body, headers = form({"email": "test@example.com"})  # sin contraseña
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.post("/auth/registro", content=body, headers=headers)
-    assert resp.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_registro_email_invalido(transport):
-    body, headers = form({"email": "invalid-email", "contraseña": "password123"})
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.post("/auth/registro", content=body, headers=headers)
-    assert resp.status_code == 422
-
-
-@pytest.mark.asyncio
 async def test_vehiculos_sin_autenticacion(transport):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.get("/admin/vehiculos")

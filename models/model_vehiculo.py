@@ -23,4 +23,4 @@ class Vehiculo(Base):
     capacidad_m3 = Column(Float, nullable=True)
     estado       = Column(Enum(EstadoVehiculo), nullable=False, default=EstadoVehiculo.disponible)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    asignaciones = relationship("AsignacionVehiculo", back_populates="vehiculo")
+    asignaciones = relationship("AsignacionRutas", back_populates="vehiculo")

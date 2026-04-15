@@ -1,5 +1,72 @@
 # Changelog
 
+## [1.0.3] - 2026-04-15
+
+### Added
+- **Módulo de Tripulación Asignada** - Nuevo módulo completo:
+  - `controller_asignaciontripulacion.py` - Controladores para gestión de tripulación
+  - `router_asignaciontripulacion.py` - Routers separados por roles (admin, driver, recolector)
+  - `service_asignaciontripulacion.py` - Servicios de lógica de negocio
+  - `model_asignaciontripulacion.py` - Modelo ORM `TripulacionAsignacion`
+  - `schema_asignaciontripulacion.py` - Schemas Pydantic para validación
+
+### Security
+- **Restricción de roles para Admin:**
+  - Admin solo puede crear usuarios con roles: `admin`, `driver`, `recolector`
+  - Validación implementada en `service_usuarios.py` (`crear_por_admin` y `actualizar_usuario`)
+  - Error HTTP 403 si se intenta asignar rol `user` desde administración
+- **Usuarios públicos sin acceso de autenticación:**
+  - Usuarios con rol `user` no pueden iniciar sesión (HTTP 403 Forbidden)
+  - Validación en `service_auth.py` en método `login`
+- **Registro público eliminado del MVP:**
+  - Endpoint `POST /auth/registro` eliminado
+  - Solo el admin puede crear usuarios en el sistema
+  - Rol `user` ya no se utiliza en el MVP
+
+### Fixed
+- **Corrección de importaciones rotas en módulo de tripulación:**
+  - `schema_asignacionrutas.py`: import corregido de `schema_asignaciontripulacion`
+  - `service_asignacionrutas.py`: import del modelo y `selectinload` corregidos
+  - `controller_asignacionrutas.py`: imports de `schema_asignaciontripulacion` y `service_asignaciontripulacion`
+  - `service_asignaciontripulacion.py`: agregado import del modelo `TripulacionAsignacion`
+- **Renombrado de archivos con espacios en nombres:**
+  - `model_asignaciontripulacion .py` → `model_asignaciontripulacion.py`
+  - `service_asignaciontripulacion .py` → `service_asignaciontripulacion.py`
+  - `schema_asignaciontripulacion .py` → `schema_asignaciontripulacion.py`
+
+### Changed
+- **main.py actualizado:**
+  - Agregados imports de routers de tripulación (sin recolector)
+  - Montados routers de tripulación en la app FastAPI
+  - Eliminados tags duplicados que causaban grupos repetidos en Swagger UI
+- **service_asignaciontripulacion.py:**
+  - Agregados métodos `obtener_tripulacion_asignacion()` y `obtener_miembro_tripulacion()`
+- **MVP simplificado - Roles y funcionalidades:**
+  - **Admin**: Crea usuarios (admin/driver/recolector), gestiona asignaciones y tripulación
+  - **Driver**: Confirma participación, inicia/finaliza recorridos, consulta asignación y tripulación
+  - **Recolector**: Rol pasivo - solo existe como entidad para ser asignado a tripulación (sin endpoints)
+  - **User**: Eliminado del MVP - no hay registro público
+
+### Removed
+- **Endpoints de recolector eliminados:**
+  - `router_recolector` de `router_asignacionrutas.py`
+  - `router_recolector` de `router_asignaciontripulacion.py`
+  - Controllers `ver_asignacion_recolector` y `confirmar_participacion` del recolector
+- **Registro público eliminado:**
+  - `POST /auth/registro` endpoint
+  - `registro_publico` controller y service
+  - Tests relacionados con registro público
+- **Endpoints duplicados eliminados de `router_asignacionrutas.py`:**
+  - `POST /{id}/tripulacion` (ya existe en `router_asignaciontripulacion.py`)
+  - `DELETE /{id}/tripulacion/{id_usuario}` (ya existe en `router_asignaciontripulacion.py`)
+
+### Tests
+- `pytest -q` pasa: `8 passed` (anteriormente 10, se eliminaron 2 tests de registro público).
+- Todos los tests de autenticación y autorización funcionando correctamente.
+- Validaciones de seguridad probadas y verificadas.
+
+---
+
 ## [1.0.2] - 2026-04-02
 
 ### Added

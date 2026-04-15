@@ -14,12 +14,13 @@ class EstadoAsignacion(str, enum.Enum):
     completada = "completada"
     cancelada  = "cancelada"
 
-class AsignacionVehiculo(Base):
-    __tablename__ = "asignaciones_vehiculo"
+class AsignacionRutas(Base):
+    __tablename__ = "asignaciones_rutas"
 
     id_asignacion = Column(Integer, primary_key=True, autoincrement=True)
     id_vehiculo   = Column(Integer, ForeignKey("vehiculos.id_vehiculo"), nullable=False)
     id_ruta       = Column(String(100), nullable=False)  # ID externo de la API de rutas
+    id_tripulacion = Column(Integer, ForeignKey("tripulacion_asignacion.id"), nullable=True)  # opcional, se llena cuando se asigna tripulación
     hora_salida   = Column(DateTime, nullable=True)      # se llena cuando el driver inicia
     fecha         = Column(DateTime, nullable=False)
     estado        = Column(Enum(EstadoAsignacion), nullable=False, default=EstadoAsignacion.pendiente)

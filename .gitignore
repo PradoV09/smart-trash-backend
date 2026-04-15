@@ -32,3 +32,4 @@ configuracion-integracion.py
 setup_websocket_test.py
 test_websockets.py
 usuario_test.py
+.gitignore

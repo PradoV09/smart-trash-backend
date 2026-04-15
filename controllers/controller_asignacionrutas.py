@@ -17,14 +17,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, AdminDep, DriverDep, RecolectorDep, UserDep
 from core.response_builders import success_response
 from schemas.schema_responses import SuccessResponse
-from schemas.schema_asignaciovehiculo import (
+from schemas.schema_asignacionrutas import (
     AsignacionCreate,
     AsignacionResponse,
     AsignacionPublicResponse,
 )
-from schemas.schema_tripulacionasignada import TripulacionCreate, TripulacionResponse
-from services.service_asignaciovehiculo import AsignacionService
-from services.service_tripulacionasignada import TripulacionService
+from schemas.schema_asignaciontripulacion import TripulacionCreate, TripulacionResponse
+from services.service_asignacionrutas import AsignacionService
+from services.service_asignaciontripulacion import TripulacionService
 from models.model_usuarios import Usuario
 from fastapi import HTTPException, status
 

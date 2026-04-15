@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from models.model_usuarios import Usuario
 from models.model_perfiles import Perfil
 from models.model_roles import Rol, TipoRol
-from schemas.schema_usuarios import UsuarioAdminCreate, UsuarioPublicCreate, UsuarioUpdate
+from schemas.schema_usuarios import UsuarioAdminCreate, UsuarioUpdate
 from core.security import hash_password
 
 
@@ -58,6 +58,15 @@ class UsuarioService:
                 detail=f"No se encontró un rol con id {data.id_rol}. Verifica el catálogo de roles.",
             )
 
+        # Validar que el rol sea uno de los permitidos para creación por admin
+        roles_permitidos = {TipoRol.admin, TipoRol.driver, TipoRol.recolector}
+        if rol.nombre not in roles_permitidos:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"El rol '{rol.nombre.value}' no puede ser asignado por un administrador. "
+                       f"Solo se permiten los roles: admin, driver, recolector.",
+            )
+
         # El perfil se crea automáticamente para mantener sincronizada la relación usuario-perfil.
         perfil = Perfil(id_rol=rol.id_rol, nombre=data.username)
         self.db.add(perfil)
@@ -74,41 +83,6 @@ class UsuarioService:
         self.db.add(usuario)
         await self.db.flush()
         await self.db.commit()
-        result = await self.db.execute(
-            self._query_con_relaciones().where(Usuario.id_usuario == usuario.id_usuario)
-        )
-        return result.scalar_one()
-
-    async def registro_publico(self, data: UsuarioPublicCreate) -> Usuario:
-        """Registra usuarios ciudadanos y les asigna automáticamente el rol `user`."""
-        await self._check_duplicado(data.username, data.correo)
-
-        result = await self.db.execute(
-            select(Rol).where(Rol.nombre == TipoRol.user)
-        )
-        rol = result.scalar_one_or_none()
-        if not rol:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="El rol 'user' no está configurado en el sistema. Verifica la tabla de roles antes de permitir registros públicos.",
-            )
-
-        perfil = Perfil(id_rol=rol.id_rol, nombre=data.username)
-        self.db.add(perfil)
-        await self.db.flush()
-
-        usuario = Usuario(
-            username=data.username,
-            correo=data.correo,
-            contraseña=hash_password(data.contraseña),
-            id_rol=rol.id_rol,
-            id_perfil=perfil.id_perfil,
-            activo=data.activo,
-        )
-        self.db.add(usuario)
-        await self.db.flush()
-        await self.db.commit()
-
         result = await self.db.execute(
             self._query_con_relaciones().where(Usuario.id_usuario == usuario.id_usuario)
         )
@@ -134,8 +108,29 @@ class UsuarioService:
         """Actualiza solo los campos presentes en el payload.
 
         Si la contraseña cambia, vuelve a hashearse antes de guardarla.
+        Si se cambia el rol, valida que sea uno de los permitidos.
         """
         usuario = await self.obtener_usuario_por_id(id_usuario)
+
+        # Si se está actualizando el rol, validar que sea permitido
+        if data.id_rol is not None:
+            result = await self.db.execute(
+                select(Rol).where(Rol.id_rol == data.id_rol)
+            )
+            rol = result.scalar_one_or_none()
+            if not rol:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"No se encontró un rol con id {data.id_rol}.",
+                )
+            roles_permitidos = {TipoRol.admin, TipoRol.driver, TipoRol.recolector}
+            if rol.nombre not in roles_permitidos:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"El rol '{rol.nombre.value}' no puede ser asignado por un administrador. "
+                           f"Solo se permiten los roles: admin, driver, recolector.",
+                )
+
         for campo, valor in data.model_dump(exclude_none=True).items():
             if campo == "contraseña":
                 valor = hash_password(valor)

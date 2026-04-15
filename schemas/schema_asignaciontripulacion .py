@@ -2,9 +2,11 @@
 
 """Schemas del módulo de tripulación asignada."""
 
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from models.model_tripulacionasignacion import RolTripulacion
+from models.model_asignaciontripulacion import RolTripulacion
 from schemas.schema_usuarios import UsuarioResponse
 from fastapi import Form
 
@@ -24,7 +26,8 @@ class TripulacionCreate(BaseModel):
         )
 
 class TripulacionResponse(BaseModel):
-    id:              int
+    
+    id_tripulacion:              int
     id_asignacion:   int
     id_usuario:      int
     rol_tripulacion: RolTripulacion
@@ -33,3 +36,18 @@ class TripulacionResponse(BaseModel):
     usuario:         UsuarioResponse
 
     model_config = ConfigDict(from_attributes=True)
+
+class UpdateTripulacion(BaseModel):
+    rol_tripulacion: RolTripulacion | None = None
+    confirmado:      bool | None = None
+
+    @classmethod
+    def as_form(
+        cls,
+        rol_tripulacion: Optional[RolTripulacion] = Form(None),
+        confirmado: Optional[bool] = Form(None),
+    ):
+        return cls(
+            rol_tripulacion=rol_tripulacion,
+            confirmado=confirmado,
+        )

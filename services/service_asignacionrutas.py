@@ -11,9 +11,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
-from models.model_asignacionvehiculo import AsignacionVehiculo, EstadoAsignacion
+from models.model_asignacionrutas import AsignacionRutas, EstadoAsignacion
+from models.model_asignaciontripulacion import TripulacionAsignacion
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
-from schemas.schema_asignaciovehiculo import AsignacionCreate
+from schemas.schema_asignacionrutas import AsignacionCreate
 from core.websocket_manager import ws_manager
 from services.service_rutas_externo import RutasExternoService
 
@@ -26,14 +27,14 @@ class AsignacionService:
     def _con_relaciones(self):
         """Crea una consulta base con `vehiculo` y `tripulacion` precargados."""
         return (
-            select(AsignacionVehiculo)
+            select(AsignacionRutas)
             .options(
-                selectinload(AsignacionVehiculo.vehiculo),
-                selectinload(AsignacionVehiculo.tripulacion),
+                selectinload(AsignacionRutas.vehiculo),
+                selectinload(AsignacionRutas.tripulacion),
             )
         )
 
-    async def crear_asignacion(self, data: AsignacionCreate) -> AsignacionVehiculo:
+    async def crear_asignacion(self, data: AsignacionCreate) -> AsignacionRutas:
         """Crea una asignación nueva si el vehículo existe y está disponible."""
         # Validar que la ruta existe en la API externa
         rutas_service = RutasExternoService()
@@ -58,19 +59,19 @@ class AsignacionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"El vehículo con id {data.id_vehiculo} no está disponible para asignación. Estado actual: {vehiculo.estado.value}.",
             )
-        asignacion = AsignacionVehiculo(**data.model_dump())
+        asignacion = AsignacionRutas(**data.model_dump())
         self.db.add(asignacion)
         await self.db.flush()
         return asignacion
 
-    async def obtener_asignaciones(self) -> list[AsignacionVehiculo]:
+    async def obtener_asignaciones(self) -> list[AsignacionRutas]:
         result = await self.db.execute(self._con_relaciones())
         return result.scalars().all()
 
-    async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
             self._con_relaciones().where(
-                AsignacionVehiculo.id_asignacion == id_asignacion
+                AsignacionRutas.id_asignacion == id_asignacion
             )
         )
         asignacion = result.scalar_one_or_none()
@@ -81,18 +82,18 @@ class AsignacionService:
             )
         return asignacion
 
-    async def obtener_asignacion_ruta(self, id_ruta: str) -> AsignacionVehiculo | None:
+    async def obtener_asignacion_ruta(self, id_ruta: str) -> AsignacionRutas | None:
         result = await self.db.execute(
             self._con_relaciones().where(
-                AsignacionVehiculo.id_ruta == id_ruta
+                AsignacionRutas.id_ruta == id_ruta
             )
         )
         return result.scalar_one_or_none()
 
-    async def verificar_asignacion_pendiente(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def verificar_asignacion_pendiente(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
-            select(AsignacionVehiculo).where(
-                AsignacionVehiculo.id_asignacion == id_asignacion
+            select(AsignacionRutas).where(
+                AsignacionRutas.id_asignacion == id_asignacion
             )
         )
         asignacion = result.scalar_one_or_none()
@@ -108,7 +109,7 @@ class AsignacionService:
             )
         return asignacion
 
-    async def iniciar_recorrido(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def iniciar_recorrido(self, id_asignacion: int) -> AsignacionRutas:
         """Inicia el recorrido una vez que toda la tripulación ha confirmado."""
         asignacion = await self.obtener_asignacion_id(id_asignacion) 
         if asignacion.estado != EstadoAsignacion.pendiente:
@@ -137,7 +138,7 @@ class AsignacionService:
         })
         return asignacion
 
-    async def finalizar_recorrido(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def finalizar_recorrido(self, id_asignacion: int) -> AsignacionRutas:
         """Finaliza un recorrido activo y devuelve el vehículo a disponibilidad."""
         asignacion = await self.obtener_asignacion_id(id_asignacion)
         if asignacion.estado != EstadoAsignacion.en_curso:
@@ -156,7 +157,7 @@ class AsignacionService:
         })
         return asignacion
 
-    async def cancelar_asignacion(self, id_asignacion: int) -> AsignacionVehiculo:
+    async def cancelar_asignacion(self, id_asignacion: int) -> AsignacionRutas:
         """Cancela una asignación no completada y libera su vehículo."""
         asignacion = await self.obtener_asignacion_id(id_asignacion) 
         if asignacion.estado == EstadoAsignacion.completada:

@@ -43,11 +43,14 @@ from routers.router_usuarios import router as usuario_router
 from routers.router_vehiculo import router as vehiculo_router
 from routers.router_reportes import router as reporte_router
 from routers.router_ws import router as ws_router
-from routers.router_asignacionvehiculo import (
+from routers.router_asignacionrutas import (
     router_admin as asignacion_admin_router,
     router_driver as asignacion_driver_router,
-    router_recolector as asignacion_recolector_router,
     router_user as asignacion_user_router,
+)
+from routers.router_asignaciontripulacion import (
+    router_admin as tripulacion_admin_router,
+    router_driver as tripulacion_driver_router,
 )
 
 # ============================================================================
@@ -219,25 +222,13 @@ app.include_router(
 )
 
 # 📋 Asignaciones de vehículos (diferentes roles)
-app.include_router(
-    asignacion_admin_router,
-    tags=["Asignaciones Admin"]
-)
+app.include_router(asignacion_admin_router)
+app.include_router(asignacion_driver_router)
+app.include_router(asignacion_user_router)
 
-app.include_router(
-    asignacion_driver_router,
-    tags=["Asignaciones Driver"]
-)
-
-app.include_router(
-    asignacion_recolector_router,
-    tags=["Asignaciones Recolector"]
-)
-
-app.include_router(
-    asignacion_user_router,
-    tags=["Asignaciones Usuario"]
-)
+# 👥 Tripulación de asignaciones (diferentes roles)
+app.include_router(tripulacion_admin_router)
+app.include_router(tripulacion_driver_router)
 
 # ============================================================================
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación

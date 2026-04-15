@@ -23,5 +23,5 @@ class TripulacionAsignacion(Base):
     confirmado      = Column(Boolean, default=False, nullable=False)
     confirmado_at   = Column(DateTime, nullable=True)
 
-    asignacion = relationship("AsignacionVehiculo", back_populates="tripulacion")
+    asignacion = relationship("AsignacionRutas", back_populates="tripulacion")
     usuario    = relationship("Usuario", back_populates="tripulaciones")

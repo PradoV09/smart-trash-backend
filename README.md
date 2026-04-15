@@ -1,17 +1,16 @@
 # 🚛 Smart Trash Routes – Backend (FastAPI)
 
-![Version](https://img.shields.io/badge/version-1.0.2-blue)
-![Tests](https://img.shields.io/badge/tests-6%20passed-green)
-![Python](https://img.shields.io/badge/python-3.13.12-blue)
+![Version](https://img.shields.io/badge/version-1.0.3-blue)
+![Tests](https://img.shields.io/badge/tests-8%20passed-green)
+![Python](https://img.shields.io/badge/python-3.13.13-blue)
 
-> ⚠️ **Versión 1.0.2** – Backend completamente funcional y optimizado con **FastAPI (Python)**.
-> API lista para integración con frontend y WebSockets operativos.
+> ⚠️ **Versión 1.0.3** – MVP Backend funcional con **FastAPI (Python)**.
+> Simplificado para MVP: solo Admin y Driver tienen funcionalidades activas.
 
 > API del sistema web para gestionar y visualizar rutas de camiones de basura en Buenaventura 🌍
 > **Backend desarrollado por: _Heiner jair godoy zamora y Jose luis prado valencia_**
 
 ---
-
 ## 🧠 Contexto del Problema
 
 En Buenaventura no hay claridad sobre los horarios ni los recorridos de los camiones de basura. Esto genera:
@@ -23,7 +22,6 @@ En Buenaventura no hay claridad sobre los horarios ni los recorridos de los cami
 El backend de este proyecto se encarga de manejar toda la lógica, datos y validaciones necesarias para soportar la solución.
 
 ---
-
 ## 🎯 Objetivo del Backend
 
 Este servidor implementado en **FastAPI** tiene como propósito:
@@ -38,26 +36,33 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 - 📖 Documentación automática completa con **Swagger UI y ReDoc**
 
 ---
-
 ## 🚀 Estado Actual del Proyecto
 
 ### ✅ **Funcionalidades Implementadas:**
 
-- **Autenticación JWT completa** con roles (admin, driver, recolector, user)
+- **Autenticación JWT** con roles (admin, driver, recolector)
 - **WebSockets operativos** para comunicación en tiempo real
-- **CRUD completo** de usuarios, vehículos, asignaciones y reportes
+- **CRUD completo** de usuarios (solo admin), vehículos, asignaciones y reportes
 - **Base de datos PostgreSQL** con migraciones Alembic
 - **API externa integrada** para validación de rutas
-- **Tests automatizados** (6/6 pasan correctamente)
+- **Tests automatizados** (8/8 pasan correctamente)
 - **Documentación completa** y ejemplos de integración
+
+### 🎭 **Roles del MVP:**
+
+| Rol | Funciones |
+|-----|-----------|
+| **Admin** | Crea usuarios (admin/driver/recolector), gestiona asignaciones y tripulación |
+| **Driver** | Confirma participación, inicia/finaliza recorridos, consulta asignación y tripulación |
+| **Recolector** | Rol pasivo - solo existe como entidad para ser asignado a tripulación (sin endpoints propios) |
+| **User** | ❌ Eliminado del MVP - no hay registro público |
 
 ### ⚡ **Optimizaciones Realizadas:**
 
-- **Reorganización completa de `main.py`** con estructura modular y documentación clara
-- **Corrección de errores de sintaxis** en archivos de ejemplo
 - **Configuración .env segura** con JWT_SECRET generado correctamente
 - **WebSockets optimizados** con manejo robusto de conexiones
 - **Gestión de dependencias** y CORS configurado para múltiples orígenes
+- **Eliminación de tags duplicados** en Swagger UI
 
 ### 🔧 **Correcciones de Errores:**
 
@@ -159,7 +164,7 @@ pytest tests/ --cov=.
 pytest tests/test_api.py::test_root_returns_success -v
 ```
 
-**Estado actual:** ✅ 6/6 tests pasan
+**Estado actual:** ✅ 8/8 tests pasan
 
 ---
 
@@ -203,7 +208,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 - **Desarrolladores:** Jose Luis Prado Valencia, Heiner Jair Godoy Zamora
 - **Proyecto:** Smart Trash Routes
-- **Versión:** 1.0.2
+- **Versión:** 1.0.3
 - **Fecha:** Abril 2026
 
 ---
