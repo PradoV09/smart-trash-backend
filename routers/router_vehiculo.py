@@ -6,7 +6,7 @@ from schemas.schema_vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoResp
 from models.model_vehiculo import EstadoVehiculo
 from controllers import controller_vehiculo
 
-router = APIRouter(prefix="/admin/vehiculos", tags=["Vehículos"])
+router = APIRouter(prefix="/admin/vehiculos", tags=["Admin: Vehículos"])
 
 router.post("",                      response_model=SuccessResponse[VehiculoResponse], status_code=status.HTTP_201_CREATED)(controller_vehiculo.crear_vehiculo)
 router.get("",                       response_model=SuccessResponse[list[VehiculoResponse]])(controller_vehiculo.listar_vehiculos)

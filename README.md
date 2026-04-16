@@ -42,7 +42,8 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 
 - **Autenticación JWT** con roles (admin, driver, recolector)
 - **WebSockets operativos** para comunicación en tiempo real
-- **CRUD completo** de usuarios (solo admin), vehículos, asignaciones y reportes
+- **CRUD completo** de usuarios (solo admin), vehículos, asignaciones
+- **Reportes Públicos** - Ciudadanos pueden reportar problemas sin registro
 - **Base de datos PostgreSQL** con migraciones Alembic
 - **API externa integrada** para validación de rutas
 - **Tests automatizados** (8/8 pasan correctamente)
@@ -56,6 +57,7 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 | **Driver** | Confirma participación, inicia/finaliza recorridos, consulta asignación y tripulación |
 | **Recolector** | Rol pasivo - solo existe como entidad para ser asignado a tripulación (sin endpoints propios) |
 | **User** | ❌ Eliminado del MVP - no hay registro público |
+| **Ciudadano** | ✅ Puede ver rutas públicas y crear reportes sin autenticación |
 
 ### ⚡ **Optimizaciones Realizadas:**
 

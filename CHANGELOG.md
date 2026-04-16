@@ -3,6 +3,14 @@
 ## [1.0.3] - 2026-04-15
 
 ### Added
+- **Reportes Públicos** - Ciudadanos pueden reportar sin autenticación:
+  - `router_reportes_publico.py` - Router público para reportes ciudadanos
+  - `controller_reportes_publico.py` - Controller sin requerimiento de auth
+  - `schema_reportes_publico.py` - Schemas para reportes públicos
+  - Endpoint `POST /reportes/` - Cualquier ciudadano puede reportar problemas
+  - Los reportes se almacenan con `u_rol_cache = "ciudadano"` para identificación
+  - El admin puede ver y gestionar todos los reportes desde `/admin/reportes/`
+
 - **Módulo de Tripulación Asignada** - Nuevo módulo completo:
   - `controller_asignaciontripulacion.py` - Controladores para gestión de tripulación
   - `router_asignaciontripulacion.py` - Routers separados por roles (admin, driver, recolector)

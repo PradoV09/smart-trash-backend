@@ -17,14 +17,14 @@ from schemas.schema_responses import SuccessResponse
 from controllers import controller_asignaciontripulacion
 
 # Admin
-router_admin = APIRouter(prefix="/admin/asignaciones", tags=["Tripulación - Admin"])
+router_admin = APIRouter(prefix="/admin/asignaciones", tags=["Admin: Tripulación"])
 
 router_admin.post("/{id_asignacion}/tripulacion", response_model=SuccessResponse[TripulacionResponse], status_code=status.HTTP_201_CREATED)(controller_asignaciontripulacion.agregar_miembro_tripulacion)
 router_admin.delete("/{id_asignacion}/tripulacion/{id_usuario}", response_model=SuccessResponse[dict])(controller_asignaciontripulacion.eliminar_miembro_tripulacion)
 router_admin.get("/{id_asignacion}/tripulacion", response_model=SuccessResponse[list[TripulacionResponse]])(controller_asignaciontripulacion.listar_tripulacion_asignacion)
 
 # Driver
-router_driver = APIRouter(prefix="/driver/asignaciones", tags=["Tripulación - Driver"])
+router_driver = APIRouter(prefix="/driver/asignaciones", tags=["Driver: Tripulación"])
 
 router_driver.get("/{id_asignacion}/tripulacion", response_model=SuccessResponse[list[TripulacionResponse]])(controller_asignaciontripulacion.ver_tripulacion_driver)
 router_driver.post("/{id_asignacion}/confirmar", response_model=SuccessResponse[TripulacionResponse])(controller_asignaciontripulacion.confirmar_participacion_driver)

@@ -19,7 +19,7 @@ ejemplo-frontend.js
 setup_websocket_test.py
 test_websockets.py
 usuario_test.py
-
+.dockerignore
 # Directorio de pruebas (mantener en repo)
 # tests/
 # pytest.ini

@@ -42,6 +42,7 @@ from routers.router_auth import router as auth_router
 from routers.router_usuarios import router as usuario_router
 from routers.router_vehiculo import router as vehiculo_router
 from routers.router_reportes import router as reporte_router
+from routers.router_reportes_publico import router as reporte_publico_router
 from routers.router_ws import router as ws_router
 from routers.router_asignacionrutas import (
     router_admin as asignacion_admin_router,
@@ -191,28 +192,19 @@ register_exception_handlers(app)
 # ============================================================================
 
 # 🔐 Autenticación y autorización
-app.include_router(
-    auth_router,
-    tags=["Autenticación"]
-)
+app.include_router(auth_router)
 
 # 👥 Gestión de usuarios
-app.include_router(
-    usuario_router,
-    tags=["Usuarios"]
-)
+app.include_router(usuario_router)
 
 # 🚛 Gestión de vehículos
-app.include_router(
-    vehiculo_router,
-    tags=["Vehículos"]
-)
+app.include_router(vehiculo_router)
 
-# 📊 Reportes y estadísticas
-app.include_router(
-    reporte_router,
-    tags=["Reportes"]
-)
+# 📊 Reportes y estadísticas (Admin - gestión)
+app.include_router(reporte_router)
+
+# 📢 Reportes públicos (Ciudadanos - sin autenticación)
+app.include_router(reporte_publico_router)
 
 # 📡 WebSockets y tiempo real
 app.include_router(
