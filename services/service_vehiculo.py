@@ -6,11 +6,25 @@ Aquí se concentra la lógica del CRUD de camiones y el control de sus estados
 operativos (`disponible`, `en_ruta`, `mantenimiento`, etc.).
 """
 
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
-from schemas.schema_vehiculo import VehiculoCreate, VehiculoUpdate
+from schemas.schema_vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoResponse
+from services.service_api_externa import APIExternaService
+
+logger = logging.getLogger(__name__)
+
+
+def _id_desde_item_api(item: dict) -> str | None:
+    for key in ("id", "vehiculo_id", "id_vehiculo"):
+        v = item.get(key)
+        if v is not None:
+            return str(v)
+    return None
 
 
 class VehiculoService:
@@ -31,13 +45,47 @@ class VehiculoService:
         vehiculo = Vehiculo(**data.model_dump())
         self.db.add(vehiculo)
         await self.db.flush()
+        # La API externa puede fallar (URL, red, 4xx/5xx). Antes se propagaba
+        # HTTPException y get_db hacía rollback: el vehículo no quedaba en BD local.
+        try:
+            ext_id, _ = await APIExternaService().crear_vehiculo_externo(
+                placa=vehiculo.placa,
+                modelo=vehiculo.modelo,
+                capacidad_m3=vehiculo.capacidad_m3,
+                estado=vehiculo.estado,
+            )
+            vehiculo.id_externo = ext_id
+        except HTTPException as exc:
+            logger.warning(
+                "Vehículo %s guardado solo en BD local; API externa no sincronizó: %s",
+                vehiculo.placa,
+                str(exc.detail),
+            )
+        await self.db.flush()
         return vehiculo
 
-    async def obtener_todos_vehiculos(self) -> list[Vehiculo]:
+    async def obtener_todos_vehiculos(self) -> list[VehiculoResponse]:
         result = await self.db.execute(select(Vehiculo))
-        return result.scalars().all()
+        locales = list(result.scalars().all())
+        externos: list[dict] = []
+        try:
+            externos = await APIExternaService().listar_vehiculos_externos()
+        except HTTPException:
+            pass
+        por_id: dict[str, dict] = {}
+        for item in externos:
+            eid = _id_desde_item_api(item)
+            if eid:
+                por_id[eid] = item
+        salida: list[VehiculoResponse] = []
+        for v in locales:
+            datos = por_id.get(v.id_externo) if v.id_externo else None
+            base = VehiculoResponse.model_validate(v)
+            salida.append(base.model_copy(update={"datos_api_externo": datos}))
+        return salida
 
-    async def obtener_vehiculo_por_id(self, id_vehiculo: int) -> Vehiculo:
+    async def _obtener_vehiculo_orm(self, id_vehiculo: int) -> Vehiculo:
+        """Instancia ORM desde BD (para delete/update); no mezclar con VehiculoResponse."""
         result = await self.db.execute(
             select(Vehiculo).where(Vehiculo.id_vehiculo == id_vehiculo)
         )
@@ -49,22 +97,46 @@ class VehiculoService:
             )
         return vehiculo
 
-    async def actualizar_vehiculo_por_id(self, id_vehiculo: int, data: VehiculoUpdate) -> Vehiculo:
+    async def obtener_vehiculo_por_id(self, id_vehiculo: int) -> VehiculoResponse:
+        vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
+        datos = None
+        if vehiculo.id_externo:
+            try:
+                externos = await APIExternaService().listar_vehiculos_externos()
+                for item in externos:
+                    if _id_desde_item_api(item) == vehiculo.id_externo:
+                        datos = item
+                        break
+            except HTTPException:
+                pass
+        base = VehiculoResponse.model_validate(vehiculo)
+        return base.model_copy(update={"datos_api_externo": datos})
+
+    async def actualizar_vehiculo_por_id(self, id_vehiculo: int, data: VehiculoUpdate) -> VehiculoResponse:
         """Actualiza parcialmente los datos de un vehículo existente."""
-        vehiculo = await self.obtener_vehiculo_por_id(id_vehiculo)
+        vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         for campo, valor in data.model_dump(exclude_none=True).items():
             setattr(vehiculo, campo, valor)
         await self.db.flush()
-        return vehiculo
+        return await self.obtener_vehiculo_por_id(id_vehiculo)
 
-    async def cambiar_estado_vehiculo(self, id_vehiculo: int, estado: EstadoVehiculo) -> Vehiculo:
+    async def cambiar_estado_vehiculo(self, id_vehiculo: int, estado: EstadoVehiculo) -> VehiculoResponse:
         """Actualiza únicamente el estado operativo del vehículo."""
-        vehiculo = await self.obtener_vehiculo_por_id(id_vehiculo)
+        vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         vehiculo.estado = estado
         await self.db.flush()
-        return vehiculo
+        return await self.obtener_vehiculo_por_id(id_vehiculo)
 
     async def eliminar_vehiculo(self, id_vehiculo: int) -> None:
-        vehiculo = await self.obtener_vehiculo_por_id(id_vehiculo)
+        vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         await self.db.delete(vehiculo)
-        await self.db.flush()
+        try:
+            await self.db.flush()
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "No se puede eliminar el vehículo: tiene asignaciones de rutas "
+                    "u otros registros vinculados."
+                ),
+            ) from None

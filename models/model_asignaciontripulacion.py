@@ -17,7 +17,6 @@ class TripulacionAsignacion(Base):
     __tablename__ = "tripulacion_asignacion"
 
     id              = Column(Integer, primary_key=True, autoincrement=True)
-    id_asignacion   = Column(Integer, ForeignKey("asignaciones_vehiculo.id_asignacion"), nullable=False)
     id_usuario      = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=False)
     rol_tripulacion = Column(Enum(RolTripulacion), nullable=False)
     confirmado      = Column(Boolean, default=False, nullable=False)

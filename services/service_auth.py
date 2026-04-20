@@ -25,7 +25,7 @@ class AuthService:
         1. Busca por username o correo (con relación de rol cargada).
         2. Verifica la contraseña con la versión async.
         3. Rechaza usuarios con rol 'user' (no tienen acceso de autenticación).
-        4. Genera un JWT con el id y rol del usuario.
+        4. Genera un JWT con id, rol y `username` (mismo valor que en BD / columna Usuario).
         """
         result = await self.db.execute(
             select(Usuario)
@@ -53,10 +53,11 @@ class AuthService:
                 detail="Los usuarios públicos no tienen permiso para autenticarse en el sistema.",
             )
 
-        # El token conserva la identidad mínima necesaria para autorización posterior.
+        # Incluye `username` para que clientes/listas coincidan con el valor guardado al crear el usuario.
         token = crear_token({
             "sub": str(usuario.id_usuario),
             "rol": usuario.id_rol,
+            "username": usuario.username,
         })
 
         return TokenResponse(access_token=token)

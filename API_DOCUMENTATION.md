@@ -72,10 +72,17 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 ## 4. Endpoints principales
 
 ### 4.1. Autenticación
+
 - `POST /auth/login` - Login con credenciales
 - Formato: `application/x-www-form-urlencoded`
 
+### 4.2. Roles (Admin)
+
+- `GET /admin/roles` - Listar roles disponibles en el sistema
+- Retorna el catálogo de roles para gestión de usuarios.
+
 ### 4.2. Usuarios (Admin)
+
 - `GET /admin/usuarios` - Listar usuarios
 - `POST /admin/usuarios` - Crear usuario
 - `GET /admin/usuarios/{id}` - Obtener usuario
@@ -83,6 +90,7 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 - `DELETE /admin/usuarios/{id}` - Eliminar usuario
 
 ### 4.3. Vehículos (Admin)
+
 - `GET /admin/vehiculos` - Listar vehículos
 - `POST /admin/vehiculos` - Crear vehículo
 - `GET /admin/vehiculos/{id}` - Obtener vehículo
@@ -90,20 +98,24 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 - `DELETE /admin/vehiculos/{id}` - Eliminar vehículo
 
 ### 4.4. Asignaciones
+
 - **Admin:** `GET|POST /admin/asignaciones`
 - **Driver:** `GET|POST /driver/asignaciones`
 - **Recolector:** `GET|POST /recolector/asignaciones`
 - **User:** `GET /user/asignaciones`
 
 ### 4.5. Reportes
+
 - `GET /admin/reportes` - Reportes administrativos
 - `POST /admin/reportes` - Crear reporte
 
 ### 4.6. WebSockets
+
 - `WebSocket /ws/conectar` - Conexión WebSocket con token
 - `GET /ws/stats` - Estadísticas de conexiones
 
 ### 4.7. Utilidades
+
 - `GET /` - Información de la API
 - `GET /health` - Health check
 - `GET /docs` - Documentación Swagger
@@ -114,12 +126,14 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 ## 5. Integración con APIs Externas
 
 ### 5.1. API de Rutas
+
 - **URL configurable:** `RUTAS_API_URL` en `.env`
 - **Validación automática:** Al crear asignaciones
 - **Cache implementado:** Para mejorar rendimiento
 - **Fallback robusto:** Manejo de errores de red
 
 ### 5.2. Ejemplos de Integración
+
 - **Frontend JavaScript:** `ejemplo-frontend.js`
 - **Backend Python:** `ejemplo-backend.py`
 - **Testing WebSockets:** `test_websockets.py`
@@ -129,9 +143,11 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 ## 6. Manejo de Errores y Respuestas
 
 ### 6.1. Formato Unificado
+
 Todas las respuestas siguen el formato:
 
 **Éxito:**
+
 ```json
 {
   "success": true,
@@ -141,6 +157,7 @@ Todas las respuestas siguen el formato:
 ```
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -154,6 +171,7 @@ Todas las respuestas siguen el formato:
 ```
 
 ### 6.2. Códigos de Error
+
 - `unauthorized`: Token inválido o expirado
 - `forbidden`: Token ausente o permisos insuficientes
 - `not_found`: Recurso no encontrado
@@ -165,16 +183,19 @@ Todas las respuestas siguen el formato:
 ## 7. Testing y Calidad
 
 ### 7.1. Tests Automatizados
+
 - **Cobertura:** 6 tests principales
 - **Estado:** ✅ Todos pasan
 - **Tipos:** Autenticación, rutas protegidas, WebSockets
 
 ### 7.2. Verificación de Calidad
+
 - **Sintaxis:** Todos los archivos verificados
 - **Importaciones:** Dependencias correctas
 - **Configuración:** Variables de entorno validadas
 
 ### 7.3. Rendimiento
+
 - **Benchmarking:** `benchmark_performance.py`
 - **Métricas:** Latencia, throughput, concurrencia
 - **Optimización:** Async completo, cache, rate limiting
@@ -184,6 +205,7 @@ Todas las respuestas siguen el formato:
 ## 8. Despliegue y Configuración
 
 ### 8.1. Variables de Entorno (.env)
+
 ```env
 DATABASE_URL=postgresql+asyncpg://user:pass@host:port/db
 SECRET_KEY=clave_secreta_segura
@@ -195,6 +217,7 @@ RUTAS_API_URL=http://localhost:8001
 ```
 
 ### 8.2. Comando de Ejecución
+
 ```bash
 # Desarrollo
 uvicorn main:app --reload
@@ -204,6 +227,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 8.3. Health Checks
+
 - **Endpoint:** `GET /health`
 - **Base de datos:** Verificación de conexión
 - **APIs externas:** Validación de conectividad
@@ -213,6 +237,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## 9. Historial de Optimizaciones
 
 ### Versión 1.0.2
+
 - ✅ **Reorganización completa de `main.py`**
 - ✅ **Corrección de errores de sintaxis**
 - ✅ **Configuración .env segura**
@@ -221,6 +246,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 - ✅ **Tests completos y funcionales**
 
 ### Correcciones Realizadas
+
 - Sintaxis en archivos de documentación
 - Configuración de routers duplicada
 - Variables de entorno incompletas
@@ -297,31 +323,37 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## 6. Esquemas (Pydantic)
 
 ### 6.1. Autenticación
+
 - `LoginRequest`: `identifier`, `contraseña`
 - `TokenResponse`: `access_token`, `token_type` (`bearer`)
 
 ### 6.2. Usuarios
+
 - `UsuarioAdminCreate`: `username`, `correo`, `contraseña`, `id_rol`, `activo`
 - `UsuarioPublicCreate`: `username`, `correo?`, `contraseña`, `activo`
 - `UsuarioUpdate`: campos opcionales `username?`, `correo?`, `contraseña?`, `id_rol?`
 - `UsuarioResponse`: respuesta completa con `id_usuario`, `username`, `correo`, `activo`, `id_perfil`, `id_rol`, `perfil`, `rol`, `created_at`, `updated_at`
 
 ### 6.3. Vehículos
+
 - `VehiculoCreate`: `placa` (`^[A-Z]{3}\d{3}$`), `modelo?`, `capacidad_m3?`, `estado`
 - `VehiculoUpdate`: campos opcionales `placa?`, `modelo?`, `capacidad_m3?`, `estado?`
 - `VehiculoResponse`: `id_vehiculo`, `placa`, `modelo`, `capacidad_m3`, `estado`, `created_at`
 
 ### 6.4. Asignaciones
+
 - `AsignacionCreate`: `id_vehiculo`, `id_ruta`, `fecha`
 - `AsignacionUpdate`: `estado?`, `hora_salida?`
 - `AsignacionResponse`: respuesta completa con vehiculo y tripulacion.
 - `AsignacionPublicResponse`: consulta pública de ruta: `id_ruta`, `id_vehiculo`, `hora_salida`, `estado`
 
 ### 6.5. Tripulación
+
 - `TripulacionCreate`: `id_usuario`, `rol_tripulacion`
 - `TripulacionResponse`: detalles del tripulante en asignación
 
 ### 6.6. Reportes
+
 - `ReporteCreate`: `id_usuario?`, `u_gmail_cache?`, `u_rol_cache?`, `descripcion`, `asunto`, `evidencia_url?`
 - `ReporteResponse`: registro historico con fecha
 
@@ -329,37 +361,38 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ## 7. Endpoints públicos y protegidos (tabla sintetizada)
 
-| Método | Ruta | Rol requerido | Request | Response | Descripción |
-|---|---|---|---|---|---|
-| `GET` | `/` | público | - | `SuccessResponse` | health check y version|
-| `POST` | `/auth/login` | público | `LoginRequest` | `TokenResponse` | iniciar sesión |
-| `POST` | `/auth/registro` | público | `UsuarioPublicCreate` | `UsuarioResponse` | registrar usuario ciudadano |
-| `POST` | `/admin/usuarios` | `admin` | `UsuarioAdminCreate` | `UsuarioResponse` | crear usuario |
-| `GET` | `/admin/usuarios` | `admin` | - | `list[UsuarioResponse]` | listar usuarios |
-| `GET` | `/admin/usuarios/{id_usuario}` | `admin` | - | `UsuarioResponse` | obtener usuario |
-| `PATCH` | `/admin/usuarios/{id_usuario}` | `admin` | `UsuarioUpdate` | `UsuarioResponse` | actualizar usuario |
-| `DELETE` | `/admin/usuarios/{id_usuario}` | `admin` | - | `{'id_usuario': int}` | desactivar usuario |
-| `POST` | `/admin/vehiculos` | `admin` | `VehiculoCreate` | `VehiculoResponse` | crear vehículo |
-| `GET` | `/admin/vehiculos` | `admin` | - | `list[VehiculoResponse]` | listar vehículos |
-| `GET` | `/admin/vehiculos/{id_vehiculo}` | `admin` | - | `VehiculoResponse` | obtener vehículo |
-| `PATCH` | `/admin/vehiculos/{id_vehiculo}` | `admin` | `VehiculoUpdate` | `VehiculoResponse` | actualizar vehículo |
-| `PATCH` | `/admin/vehiculos/{id_vehiculo}/estado` | `admin` | `estado` form/body | `VehiculoResponse` | cambiar estado |
-| `DELETE` | `/admin/vehiculos/{id_vehiculo}` | `admin` | - | `{'id_vehiculo': int}` | eliminar vehículo |
-| `POST` | `/admin/reportes` | `admin` | `ReporteCreate` | `ReporteResponse` | registrar reporte |
-| `GET` | `/admin/reportes` | `admin` | query `id_usuario?`, `asunto?` | `list[ReporteResponse]` | listar reportes |
-| `POST` | `/admin/asignaciones` | `admin` | `AsignacionCreate` | `AsignacionResponse` | crear asignación |
-| `GET` | `/admin/asignaciones` | `admin` | - | `list[AsignacionResponse]` | listar asignaciones |
-| `GET` | `/admin/asignaciones/rutas/{id_ruta}` | `admin` | - | `dict` | obtener detalles ruta externa |
-| `GET` | `/admin/asignaciones/{id_asignacion}` | `admin` | - | `AsignacionResponse` | obtener asignación admin |
-| `POST` | `/admin/asignaciones/{id_asignacion}/cancelar` | `admin` | - | `AsignacionResponse` | cancelar asignación |
-| `POST` | `/admin/asignaciones/{id_asignacion}/tripulacion` | `admin` | `TripulacionCreate` | `TripulacionResponse` | agregar tripulante |
-| `DELETE` | `/admin/asignaciones/{id_asignacion}/tripulacion/{id_usuario}` | `admin` | - | `{'id_asignacion','id_usuario'}` | eliminar tripulante |
-| `GET` | `/driver/asignaciones/{id_asignacion}` | `driver` | - | `AsignacionResponse` | ver asignación driver |
-| `POST` | `/driver/asignaciones/{id_asignacion}/iniciar` | `driver` | - | `AsignacionResponse` | iniciar recorrido |
-| `POST` | `/driver/asignaciones/{id_asignacion}/finalizar` | `driver` | - | `AsignacionResponse` | finalizar recorrido |
-| `GET` | `/recolector/asignaciones/{id_asignacion}` | `recolector` | - | `AsignacionResponse` | ver asignación recolector |
-| `POST` | `/recolector/asignaciones/{id_asignacion}/confirmar/{id_usuario}` | `recolector` | - | `TripulacionResponse` | confirmar participación |
-| `GET` | `/rutas/{id_ruta}/horario` | `user` | - | `AsignacionPublicResponse` | ver horario ruta |
+| Método   | Ruta                                                              | Rol requerido | Request                        | Response                         | Descripción                   |
+| -------- | ----------------------------------------------------------------- | ------------- | ------------------------------ | -------------------------------- | ----------------------------- |
+| `GET`    | `/`                                                               | público       | -                              | `SuccessResponse`                | health check y version        |
+| `GET`    | `/admin/roles`                                                    | `admin`       | -                              | `list[RolResponse]`              | listar roles catálogo         |
+| `POST`   | `/auth/login`                                                     | público       | `LoginRequest`                 | `TokenResponse`                  | iniciar sesión                |
+| `POST`   | `/auth/registro`                                                  | público       | `UsuarioPublicCreate`          | `UsuarioResponse`                | registrar usuario ciudadano   |
+| `POST`   | `/admin/usuarios`                                                 | `admin`       | `UsuarioAdminCreate`           | `UsuarioResponse`                | crear usuario                 |
+| `GET`    | `/admin/usuarios`                                                 | `admin`       | -                              | `list[UsuarioResponse]`          | listar usuarios               |
+| `GET`    | `/admin/usuarios/{id_usuario}`                                    | `admin`       | -                              | `UsuarioResponse`                | obtener usuario               |
+| `PATCH`  | `/admin/usuarios/{id_usuario}`                                    | `admin`       | `UsuarioUpdate`                | `UsuarioResponse`                | actualizar usuario            |
+| `DELETE` | `/admin/usuarios/{id_usuario}`                                    | `admin`       | -                              | `{'id_usuario': int}`            | desactivar usuario            |
+| `POST`   | `/admin/vehiculos`                                                | `admin`       | `VehiculoCreate`               | `VehiculoResponse`               | crear vehículo                |
+| `GET`    | `/admin/vehiculos`                                                | `admin`       | -                              | `list[VehiculoResponse]`         | listar vehículos              |
+| `GET`    | `/admin/vehiculos/{id_vehiculo}`                                  | `admin`       | -                              | `VehiculoResponse`               | obtener vehículo              |
+| `PATCH`  | `/admin/vehiculos/{id_vehiculo}`                                  | `admin`       | `VehiculoUpdate`               | `VehiculoResponse`               | actualizar vehículo           |
+| `PATCH`  | `/admin/vehiculos/{id_vehiculo}/estado`                           | `admin`       | `estado` form/body             | `VehiculoResponse`               | cambiar estado                |
+| `DELETE` | `/admin/vehiculos/{id_vehiculo}`                                  | `admin`       | -                              | `{'id_vehiculo': int}`           | eliminar vehículo             |
+| `POST`   | `/admin/reportes`                                                 | `admin`       | `ReporteCreate`                | `ReporteResponse`                | registrar reporte             |
+| `GET`    | `/admin/reportes`                                                 | `admin`       | query `id_usuario?`, `asunto?` | `list[ReporteResponse]`          | listar reportes               |
+| `POST`   | `/admin/asignaciones`                                             | `admin`       | `AsignacionCreate`             | `AsignacionResponse`             | crear asignación              |
+| `GET`    | `/admin/asignaciones`                                             | `admin`       | -                              | `list[AsignacionResponse]`       | listar asignaciones           |
+| `GET`    | `/admin/asignaciones/rutas/{id_ruta}`                             | `admin`       | -                              | `dict`                           | obtener detalles ruta externa |
+| `GET`    | `/admin/asignaciones/{id_asignacion}`                             | `admin`       | -                              | `AsignacionResponse`             | obtener asignación admin      |
+| `POST`   | `/admin/asignaciones/{id_asignacion}/cancelar`                    | `admin`       | -                              | `AsignacionResponse`             | cancelar asignación           |
+| `POST`   | `/admin/asignaciones/{id_asignacion}/tripulacion`                 | `admin`       | `TripulacionCreate`            | `TripulacionResponse`            | agregar tripulante            |
+| `DELETE` | `/admin/asignaciones/{id_asignacion}/tripulacion/{id_usuario}`    | `admin`       | -                              | `{'id_asignacion','id_usuario'}` | eliminar tripulante           |
+| `GET`    | `/driver/asignaciones/{id_asignacion}`                            | `driver`      | -                              | `AsignacionResponse`             | ver asignación driver         |
+| `POST`   | `/driver/asignaciones/{id_asignacion}/iniciar`                    | `driver`      | -                              | `AsignacionResponse`             | iniciar recorrido             |
+| `POST`   | `/driver/asignaciones/{id_asignacion}/finalizar`                  | `driver`      | -                              | `AsignacionResponse`             | finalizar recorrido           |
+| `GET`    | `/recolector/asignaciones/{id_asignacion}`                        | `recolector`  | -                              | `AsignacionResponse`             | ver asignación recolector     |
+| `POST`   | `/recolector/asignaciones/{id_asignacion}/confirmar/{id_usuario}` | `recolector`  | -                              | `TripulacionResponse`            | confirmar participación       |
+| `GET`    | `/rutas/{id_ruta}/horario`                                        | `user`        | -                              | `AsignacionPublicResponse`       | ver horario ruta              |
 
 ---
 
@@ -377,15 +410,19 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## 9. Detalles de implementación relevante
 
 ### 9.1 Lifespan
+
 - `main.py` ejecuta `crear_tablas()` antes de aceptar tráfico.
 
 ### 9.2 Manejo de errores
+
 - `core/error_handlers.py` define middleware de excepción para generar payload uniforme.
 
 ### 9.3 Seguridad de contraseñas
+
 - `core/security.py` usa `passlib` con `bcrypt` y JWT con `pyjwt`.
 
 ### 9.4 Dependencias autorizadas
+
 - `require_rol` en `core/dependecies.py` valida el rol del usuario en base al token.
 
 ---
@@ -395,19 +432,23 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 Esta API está preparada para consumir datos de un servicio externo de rutas:
 
 ### 10.1 Configuración
+
 - Variable de entorno: `RUTAS_API_URL` (default: `http://localhost:8001`)
 - Servicio: `services/service_rutas_externo.py`
 
 ### 10.2 Validaciones automáticas
+
 - Al crear asignaciones, se valida que la ruta existe en la API externa
 - Endpoint `/admin/asignaciones/rutas/{id_ruta}` para consultar detalles
 
 ### 10.3 Flujo esperado
+
 1. Frontend crea ruta en API externa → obtiene `id_ruta`
 2. Frontend crea asignación aquí enviando el `id_ruta`
 3. Esta API valida que la ruta existe antes de crear la asignación
 
 ### 10.4 Manual detallado
+
 Para instrucciones completas de configuración, ejemplos de código y testing, consulta `MANUAL_INTEGRACION_RUTAS.md`.
 
 ---
@@ -425,12 +466,14 @@ En la auditoría completa del proyecto (routers, controllers, services, schemas,
 - Pruebas automáticas (`pytest -q`) cubriendo flujo de auth y roles, CRUD y validaciones: ✅
 
 ### 10.1 Puntuación general (0-10)
+
 - Robustez de API: 9.0 (módulos con validación y excepciones bien tratadas)
 - Consistencia de contrato: 9.5 (respuestas y tipos alineados)
 - Seguridad: 8.5 (JWT + RBAC correctos; zona de mejora: refresh token y rate limit)
 - Mantenibilidad: 9.0 (capas limpias, patrones reutilizables, docs actualizadas)
 
 ### 10.2 Recomendaciones rápidas
+
 1. Añadir pruebas de integración para WebSocket con token y eventos de cambio de estado.
 2. Implementar `rate limit` en rutas de login y creación de recursos para mitigar abuso.
 3. Registrar auditoría de eventos sensibles (login fallido, role changes, delete operations).
@@ -441,7 +484,7 @@ En la auditoría completa del proyecto (routers, controllers, services, schemas,
 ## 11. Estado actual de tests
 
 Ejecutando `pytest -q` luego de las correcciones:
+
 - `tests/test_api.py`: 6 pasadas, 0 fallos.
 - Las pruebas verifican 422/401/403 y los flujos de administrador de usuarios y vehículos.
 - Nota: si hay nuevos endpoints, agregar tests de permisos para todos los roles.
-

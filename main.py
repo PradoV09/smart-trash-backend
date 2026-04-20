@@ -20,6 +20,7 @@ Versión: 1.0.0
 # ============================================================================
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 # ============================================================================
 # IMPORTS - Librerías de terceros
@@ -27,6 +28,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 # ============================================================================
 # IMPORTS - Módulos locales
@@ -43,6 +45,9 @@ from routers.router_usuarios import router as usuario_router
 from routers.router_vehiculo import router as vehiculo_router
 from routers.router_reportes import router as reporte_router
 from routers.router_reportes_publico import router as reporte_publico_router
+from routers.router_roles import router as roles_router
+from routers.router_rutas import router as rutas_externas_router
+from routers.router_recorridos import router as recorridos_externos_router
 from routers.router_ws import router as ws_router
 from routers.router_asignacionrutas import (
     router_admin as asignacion_admin_router,
@@ -53,6 +58,7 @@ from routers.router_asignaciontripulacion import (
     router_admin as tripulacion_admin_router,
     router_driver as tripulacion_driver_router,
 )
+from scripts.seed_admin import seed_admin
 
 # ============================================================================
 # CONFIGURACIÓN DE LIFESPAN - Ciclo de vida de la aplicación
@@ -67,11 +73,9 @@ async def inicializar_base_datos():
 
 async def precargar_configuraciones():
     """Pre-carga configuraciones críticas para reducir latencia inicial."""
-    # Importar módulos que se usan frecuentemente para cache de import
     from core.security import pwd_context
     from core.websocket_manager import ws_manager
 
-    # Verificar que las importaciones funcionen
     assert pwd_context is not None
     assert ws_manager is not None
 
@@ -82,7 +86,7 @@ async def verificar_conexion_db():
         from sqlalchemy.ext.asyncio import create_async_engine
         engine = create_async_engine(settings.DATABASE_URL, echo=False)
         async with engine.begin() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))  # ✅ Fix: usar text()
         await engine.dispose()
         return True
     except Exception as e:
@@ -123,6 +127,10 @@ async def lifespan(app: FastAPI):
     # 3. Pre-carga de configuraciones
     await precargar_configuraciones()
     print("✅ Configuraciones pre-cargadas")
+
+    # 4. Seeder de administrador por defecto (idempotente)
+    await seed_admin()
+    print("✅ Seeder de usuario admin ejecutado")
 
     print("✅ Servidor listo y optimizado")
     print(f"📡 API disponible en: http://localhost:8000")
@@ -197,6 +205,9 @@ app.include_router(auth_router)
 # 👥 Gestión de usuarios
 app.include_router(usuario_router)
 
+# 🏷️ Catálogo de roles
+app.include_router(roles_router)
+
 # 🚛 Gestión de vehículos
 app.include_router(vehiculo_router)
 
@@ -205,6 +216,10 @@ app.include_router(reporte_router)
 
 # 📢 Reportes públicos (Ciudadanos - sin autenticación)
 app.include_router(reporte_publico_router)
+
+# 🗺️ Integración con API externa (rutas y recorridos)
+app.include_router(rutas_externas_router)
+app.include_router(recorridos_externos_router)
 
 # 📡 WebSockets y tiempo real
 app.include_router(
@@ -267,7 +282,7 @@ def health_check():
     return success_response(
         data={
             "status": "healthy",
-            "timestamp": "2026-04-02T12:00:00Z",  # Se actualizaría dinámicamente
+            "timestamp": datetime.now(timezone.utc).isoformat(),  # ✅ Fix: timestamp dinámico
             "version": "1.0.0"
         },
         message="API funcionando correctamente",

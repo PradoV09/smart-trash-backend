@@ -10,7 +10,6 @@ from models.model_perfiles import Perfil
 from models.model_usuarios import Usuario
 from models.model_reportes import ReporteActividad
 from models.model_vehiculo import Vehiculo
-from models.model_asignacionrutas import AsignacionVehiculo
 from models.model_asignaciontripulacion import TripulacionAsignacion
 
 

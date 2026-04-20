@@ -68,7 +68,7 @@ class UsuarioService:
             )
 
         # El perfil se crea automáticamente para mantener sincronizada la relación usuario-perfil.
-        perfil = Perfil(id_rol=rol.id_rol, nombre=data.username)
+        perfil = Perfil(id_rol=rol.id_rol, nombre=data.nombre)
         self.db.add(perfil)
         await self.db.flush()
 
@@ -143,17 +143,7 @@ class UsuarioService:
         return result.scalar_one()
 
     async def eliminar_usuario(self, id_usuario: int):
-        """Desactiva lógicamente un usuario en lugar de borrarlo por completo."""
+        """Desactiva lógicamente un usuario (activo=False); no borra la fila por integridad referencial."""
         usuario = await self.obtener_usuario_por_id(id_usuario)
-        if usuario.rol.nombre == TipoRol.admin:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No se puede desactivar el usuario con id {id_usuario} porque tiene rol de administrador.",
-            )
         usuario.activo = False
         await self.db.flush()
-        await self.db.commit()
-        result = await self.db.execute(
-            self._query_con_relaciones().where(Usuario.id_usuario == id_usuario)
-        )
-        return result.scalar_one()

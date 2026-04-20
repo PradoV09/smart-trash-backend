@@ -9,15 +9,30 @@ from typing import Optional
 from datetime import datetime
 import re
 from schemas.schema_perfiles import PerfilResponse
-from schemas.schema_roles import ResponseRol
+from schemas.schema_roles import RolResponse
 from fastapi import Form
 
 class UsuarioAdminCreate(BaseModel):
+    nombre:     str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Nombre del usuario (se guarda en el perfil; obligatorio)",
+    )
     username:   str = Field(..., min_length=3, max_length=50, description="Nombre de usuario único")
     correo:     EmailStr = Field(..., description="Correo electrónico del usuario")
     contraseña: str = Field(..., min_length=6, description="Contraseña del usuario")
     id_rol:     int = Field(..., gt=0)  # solo driver o recolector
     activo:     Optional[bool] = True
+
+    @field_validator("nombre")
+    @classmethod
+    def nombre_no_vacio(cls, value: str) -> str:
+        s = value.strip()
+        if not s:
+            raise ValueError("El nombre del usuario es obligatorio y no puede ser solo espacios.")
+        return s
+
     @field_validator('correo')
     @classmethod
     def validate_correo(cls, value):
@@ -29,6 +44,7 @@ class UsuarioAdminCreate(BaseModel):
     @classmethod
     def as_form(
         cls,
+        nombre: str = Form(..., min_length=1, max_length=255),
         username: str = Form(..., min_length=3, max_length=50),
         correo: EmailStr = Form(...),
         contraseña: str = Form(..., min_length=6),
@@ -36,6 +52,7 @@ class UsuarioAdminCreate(BaseModel):
         activo: Optional[bool] = Form(True),
     ):
         return cls(
+            nombre=nombre,
             username=username,
             correo=correo,
             contraseña=contraseña,
@@ -100,6 +117,8 @@ class UsuarioUpdate(BaseModel):
             id_rol=id_rol,
         )
 
+# En schemas/schema_usuarios.py
+
 class UsuarioResponse(BaseModel):
     id_usuario: int
     username:   str
@@ -108,8 +127,13 @@ class UsuarioResponse(BaseModel):
     id_perfil:  int
     id_rol:     int
     perfil:     PerfilResponse
-    rol:        ResponseRol
+    # Usa comillas para evitar la búsqueda inmediata del símbolo
+    rol:        "RolResponse" 
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# Esto fuerza a Pydantic a resolver el string "RolResponse" 
+# contra el namespace real en tiempo de ejecución.
+UsuarioResponse.model_rebuild()

@@ -18,6 +18,7 @@ class Vehiculo(Base):
     __tablename__ = "vehiculos"
 
     id_vehiculo  = Column(Integer, primary_key=True, autoincrement=True)
+    id_externo   = Column(String(36), unique=True, nullable=True, index=True)
     placa        = Column(String(20), unique=True, nullable=False)
     modelo       = Column(String(100), nullable=True)
     capacidad_m3 = Column(Float, nullable=True)

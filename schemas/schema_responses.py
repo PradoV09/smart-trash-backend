@@ -35,3 +35,5 @@ class ErrorResponse(BaseModel):
 
     success: bool             = False
     error:   ErrorDetailPayload
+
+SuccessResponse.model_rebuild()

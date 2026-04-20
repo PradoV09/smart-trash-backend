@@ -60,10 +60,12 @@ class VehiculoUpdate(BaseModel):
 
 class VehiculoResponse(BaseModel):
     id_vehiculo:  int
+    id_externo:   Optional[str] = None
     placa:        str
-    modelo:       str  
+    modelo:       Optional[str] = None
     capacidad_m3: Optional[float]
     estado:       EstadoVehiculo
     created_at:   datetime
+    datos_api_externo: Optional[dict] = None
 
     model_config =  ConfigDict(from_attributes=True)

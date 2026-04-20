@@ -1,8 +1,17 @@
 # Changelog
 
+## [1.0.4] - 2026-04-16
+
+### Added
+
+- **Endpoint de Roles (Admin)**:
+  - `GET /admin/roles` para obtener el catálogo de roles.
+  - Permite al frontend cargar dinámicamente los roles disponibles para el registro de usuarios.
+
 ## [1.0.3] - 2026-04-15
 
 ### Added
+
 - **Reportes Públicos** - Ciudadanos pueden reportar sin autenticación:
   - `router_reportes_publico.py` - Router público para reportes ciudadanos
   - `controller_reportes_publico.py` - Controller sin requerimiento de auth
@@ -19,6 +28,7 @@
   - `schema_asignaciontripulacion.py` - Schemas Pydantic para validación
 
 ### Security
+
 - **Restricción de roles para Admin:**
   - Admin solo puede crear usuarios con roles: `admin`, `driver`, `recolector`
   - Validación implementada en `service_usuarios.py` (`crear_por_admin` y `actualizar_usuario`)
@@ -32,6 +42,7 @@
   - Rol `user` ya no se utiliza en el MVP
 
 ### Fixed
+
 - **Corrección de importaciones rotas en módulo de tripulación:**
   - `schema_asignacionrutas.py`: import corregido de `schema_asignaciontripulacion`
   - `service_asignacionrutas.py`: import del modelo y `selectinload` corregidos
@@ -43,6 +54,7 @@
   - `schema_asignaciontripulacion .py` → `schema_asignaciontripulacion.py`
 
 ### Changed
+
 - **main.py actualizado:**
   - Agregados imports de routers de tripulación (sin recolector)
   - Montados routers de tripulación en la app FastAPI
@@ -56,6 +68,7 @@
   - **User**: Eliminado del MVP - no hay registro público
 
 ### Removed
+
 - **Endpoints de recolector eliminados:**
   - `router_recolector` de `router_asignacionrutas.py`
   - `router_recolector` de `router_asignaciontripulacion.py`
@@ -69,6 +82,7 @@
   - `DELETE /{id}/tripulacion/{id_usuario}` (ya existe en `router_asignaciontripulacion.py`)
 
 ### Tests
+
 - `pytest -q` pasa: `8 passed` (anteriormente 10, se eliminaron 2 tests de registro público).
 - Todos los tests de autenticación y autorización funcionando correctamente.
 - Validaciones de seguridad probadas y verificadas.
@@ -78,6 +92,7 @@
 ## [1.0.2] - 2026-04-02
 
 ### Added
+
 - Integración con API externa de rutas:
   - Servicio `service_rutas_externo.py` para llamadas HTTP a API de rutas
   - Validación automática de rutas al crear asignaciones
@@ -88,6 +103,7 @@
 - WebSockets con endpoint `/ws/stats` para estadísticas de conexiones
 
 ### Fixed
+
 - Ajustada la seguridad en `core/dependecies.py`:
   - `HTTPBearer(auto_error=False)` para manejo manual de token.
   - token ausente -> 403, token inválido/expirado -> 401.
@@ -104,6 +120,7 @@
 - **Variables de entorno:** JWT_SECRET generado correctamente y RUTAS_API_URL agregado
 
 ### Changed
+
 - **Reorganización completa de `main.py`:**
   - Estructura modular con secciones claras
   - Documentación completa y comentarios descriptivos
@@ -119,6 +136,7 @@
   - Variables de entorno completas y documentadas
 
 ### Added
+
 - Documentación actualizada en `DEVELOPER_GUIDE.md` y `API_DOCUMENTATION.md` con detalle de la seguridad JWT/RBAC.
 - Se agregó sección de evaluación de calidad y puntuación de la API en `API_DOCUMENTATION.md`.
 - **Archivos de ejemplo creados:**
@@ -134,6 +152,7 @@
   - Estado de tests y funcionalidades implementadas
 
 ### Tests
+
 - `pytest -q` pasa: `6 passed`.
 - Tests de WebSockets implementados y funcionales.
 - Verificación de sintaxis en todos los archivos creados.
@@ -141,6 +160,7 @@
 ## [1.0.1] - 2026-04-02
 
 ### Fixed
+
 - Ajustada la seguridad en `core/dependecies.py`:
   - `HTTPBearer(auto_error=False)` para manejo manual de token.
   - token ausente -> 403, token inválido/expirado -> 401.
@@ -151,8 +171,10 @@
 - `routers` y `schemas` actualizados para consistencia de `response_model`.
 
 ### Added
+
 - Documentación actualizada en `DEVELOPER_GUIDE.md` y `API_DOCUMENTATION.md` con detalle de la seguridad JWT/RBAC.
 - Se agregó sección de evaluación de calidad y puntuación de la API en `API_DOCUMENTATION.md`.
 
 ### Tests
+
 - `pytest -q` pasa: `6 passed`.
