@@ -94,6 +94,7 @@ class UsuarioUpdate(BaseModel):
     correo:     EmailStr | None = None
     contraseña: str      | None = None
     id_rol:     int      | None = None
+    activo:     bool     | None = None
     @field_validator('correo')
     @classmethod
     def validate_correo(cls, value):
@@ -109,12 +110,14 @@ class UsuarioUpdate(BaseModel):
         correo: Optional[EmailStr] = Form(None),
         contraseña: Optional[str] = Form(None),
         id_rol: Optional[int] = Form(None),
+        activo: Optional[bool] = Form(None),
     ):
         return cls(
             username=username,
             correo=correo,
             contraseña=contraseña,
             id_rol=id_rol,
+            activo=activo,
         )
 
 # En schemas/schema_usuarios.py
