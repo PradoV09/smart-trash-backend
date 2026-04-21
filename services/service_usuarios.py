@@ -39,7 +39,7 @@ class UsuarioService:
         Esto evita cargas diferidas innecesarias y facilita serializar respuestas.
         """
         return select(Usuario).options(
-            selectinload(Usuario.perfil),
+            selectinload(Usuario.perfil).selectinload(Perfil.rol),
             selectinload(Usuario.rol),
         )
 

@@ -8,8 +8,8 @@ from controllers import controller_asignacionrutas
 # Admin
 router_admin = APIRouter(prefix="/admin/asignaciones", tags=["Admin: Asignaciones"])
 
-router_admin.post("/",                                        response_model=SuccessResponse[AsignacionResponse], status_code=status.HTTP_201_CREATED)(controller_asignacionrutas.crear_asignacion)
-router_admin.get("/",                                         response_model=SuccessResponse[list[AsignacionResponse]])(controller_asignacionrutas.listar_asignaciones)
+router_admin.post("",                                        response_model=SuccessResponse[AsignacionResponse], status_code=status.HTTP_201_CREATED)(controller_asignacionrutas.crear_asignacion)
+router_admin.get("",                                         response_model=SuccessResponse[list[AsignacionResponse]])(controller_asignacionrutas.listar_asignaciones)
 router_admin.get("/rutas/{id_ruta}",                          response_model=SuccessResponse[dict])(controller_asignacionrutas.obtener_detalles_ruta)
 router_admin.get("/{id_asignacion}",                          response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.obtener_asignacion_admin)
 router_admin.post("/{id_asignacion}/cancelar",                response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.cancelar_asignacion)

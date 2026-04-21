@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class RutasCreateRequest(BaseModel):
     nombre_ruta: str = Field(..., min_length=1, max_length=255)
+    perfil_id: UUID
     calles_ids: list[UUID] | None = None
     shape: dict[str, Any] | None = None
 
@@ -25,4 +26,14 @@ class RutasCreateRequest(BaseModel):
 
 
 class RutasCreateResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+class RutaResponse(BaseModel):
+    id: UUID
+    perfil_id: UUID
+    nombre_ruta: str
+    color_hex: str | None = None
+    shape: Any | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
     model_config = ConfigDict(extra="allow")

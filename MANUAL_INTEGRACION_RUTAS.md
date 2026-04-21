@@ -14,6 +14,9 @@ He creado un archivo `configuracion-integracion.py` con ejemplos detallados de c
 # URL de tu API de rutas externa
 RUTAS_API_URL=http://localhost:8001
 
+# ID de perfil para la integración (obtenido de la API externa)
+PERFIL_ID=tu_identificador_de_perfil_aqui
+
 # Autenticación (si es requerida por tu API)
 RUTAS_API_TOKEN=tu_token_jwt
 RUTAS_API_KEY=tu_api_key
@@ -50,11 +53,11 @@ const crearRuta = async (datosRuta) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      origen: "Punto A",
-      destino: "Punto B",
+      origen: 'Punto A',
+      destino: 'Punto B',
       distancia: 10.5,
       // otros campos según tu API de rutas
-    })
+    }),
   });
 
   const data = await response.json();
@@ -71,15 +74,15 @@ He creado un archivo `ejemplo-frontend.js` que muestra cómo usar la integració
 async function ejemploCompleto() {
   // 1. Login para obtener token JWT
   const loginExitoso = await login('admin@example.com', 'password123');
-  
+
   // 2. Crear ruta en API externa
   const idRuta = await crearRutaEnAPIExterna({
     origen: 'Centro de Buenaventura',
     destino: 'Barrio Nuevo',
     distancia: 5.2,
-    tiempo_estimado: 25
+    tiempo_estimado: 25,
   });
-  
+
   // 3. Crear asignación usando el ID de ruta
   const asignacion = await crearAsignacion(idRuta, 1, '2026-04-02T08:00:00');
 }
@@ -95,11 +98,12 @@ async function ejemploCompleto() {
 ### Configuración:
 
 ```javascript
-const API_RUTAS_URL = 'http://localhost:8001';  // Tu API de rutas
-const API_ASIGNACIONES_URL = 'http://localhost:8000';  // Esta API
+const API_RUTAS_URL = 'http://localhost:8001'; // Tu API de rutas
+const API_ASIGNACIONES_URL = 'http://localhost:8000'; // Esta API
 ```
 
 Para usar en HTML:
+
 ```html
 <script src="ejemplo-frontend.js"></script>
 <script>
@@ -119,7 +123,7 @@ import httpx
 async def ejemplo_completo():
     # 1. Login
     await login('admin@example.com', 'password123')
-    
+
     # 2. Crear ruta en API externa
     id_ruta = await crear_ruta_en_api_externa({
         'origen': 'Centro de Buenaventura',
@@ -127,7 +131,7 @@ async def ejemplo_completo():
         'distancia': 5.2,
         'tiempo_estimado': 25
     })
-    
+
     # 3. Crear asignación
     asignacion = await crear_asignacion(id_ruta, 1, '2026-04-02T08:00:00')
 
@@ -151,6 +155,7 @@ fecha=2026-04-02T10:00:00
 ```
 
 **Respuesta exitosa:**
+
 ```json
 {
   "success": true,
@@ -167,6 +172,7 @@ fecha=2026-04-02T10:00:00
 ```
 
 **Error si la ruta no existe:**
+
 ```json
 {
   "success": false,
@@ -189,6 +195,7 @@ Authorization: Bearer <token>
 ```
 
 **Respuesta:**
+
 ```json
 {
   "success": true,
@@ -261,6 +268,7 @@ Ejecuta: `python mock_server.py`
 ### API externa no disponible
 
 Si la API externa no responde:
+
 - Las validaciones fallarán
 - Se lanzará error 400: "La ruta con id X no existe en el servicio de rutas."
 - Revisa logs del servidor para errores de conexión

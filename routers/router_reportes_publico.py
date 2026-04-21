@@ -14,7 +14,7 @@ from controllers import controller_reportes_publico
 router = APIRouter(prefix="/reportes", tags=["Público: Reportes"])
 
 router.post(
-    "/",
+    "",
     response_model=SuccessResponse[ReportePublicoResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Crear reporte público",

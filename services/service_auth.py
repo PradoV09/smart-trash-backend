@@ -11,6 +11,7 @@ from models.model_usuarios import Usuario
 from models.model_roles import Rol, TipoRol
 from schemas.schema_auth import LoginRequest, TokenResponse
 from core.security import verify_password_async, crear_token
+from core.settings import settings
 
 
 class AuthService:
@@ -58,6 +59,7 @@ class AuthService:
             "sub": str(usuario.id_usuario),
             "rol": usuario.id_rol,
             "username": usuario.username,
+            "perfil_id": settings.PERFIL_ID,
         })
 
         return TokenResponse(access_token=token)

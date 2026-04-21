@@ -7,5 +7,5 @@ from controllers import controller_reportes
 
 router = APIRouter(prefix="/admin/reportes", tags=["Admin: Reportes"])
 
-router.post("/", response_model=SuccessResponse[ReporteResponse], status_code=status.HTTP_201_CREATED)(controller_reportes.crear_reporte)
-router.get("/",  response_model=SuccessResponse[list[ReporteResponse]])(controller_reportes.listar_reportes)
+router.post("", response_model=SuccessResponse[ReporteResponse], status_code=status.HTTP_201_CREATED)(controller_reportes.crear_reporte)
+router.get("",  response_model=SuccessResponse[list[ReporteResponse]])(controller_reportes.listar_reportes)

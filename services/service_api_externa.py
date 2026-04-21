@@ -26,12 +26,14 @@ class APIExternaService:
         if not self.api_base_url:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="La variable 'API' no está configurada en .env.",
+                detail="La variable 'RUTAS_API_URL' no está configurada en el archivo .env del backend.",
             )
+
+    def _validate_perfil_id_config(self) -> None:
         if not self.perfil_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="La variable 'PERFIL_ID' no está configurada en .env.",
+                detail="La variable 'PERFIL_ID' no está configurada en el archivo .env del backend.",
             )
 
     @staticmethod
@@ -58,6 +60,7 @@ class APIExternaService:
 
     async def crear_ruta(self, data: RutasCreateRequest) -> dict[str, Any]:
         self._validate_config()
+        self._validate_perfil_id_config()
         payload: dict[str, Any] = {
             "nombre_ruta": data.nombre_ruta,
             "perfil_id": self.perfil_id,
@@ -80,8 +83,57 @@ class APIExternaService:
             self._raise_external_error(response)
         return response.json()
 
+    async def listar_rutas(self, perfil_id: str | None = None) -> list[dict[str, Any]] | dict[str, Any]:
+        self._validate_config()
+        p_id = perfil_id or self.perfil_id
+        if not p_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El campo perfil_id es obligatorio.",
+            )
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    f"{self.api_base_url}/api/rutas",
+                    params={"perfil_id": p_id},
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"No se pudo conectar con la API externa: {exc}",
+            ) from exc
+
+        if response.is_error:
+            self._raise_external_error(response)
+        return response.json()
+
+    async def obtener_ruta(self, id: str, perfil_id: str | None = None) -> dict[str, Any]:
+        self._validate_config()
+        p_id = perfil_id or self.perfil_id
+        if not p_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El campo perfil_id es obligatorio.",
+            )
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    f"{self.api_base_url}/api/rutas/{id}",
+                    params={"perfil_id": p_id}
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"No se pudo conectar con la API externa: {exc}",
+            ) from exc
+
+        if response.is_error:
+            self._raise_external_error(response)
+        return response.json()
+
     async def iniciar_recorrido(self, data: IniciarRecorridoRequest) -> dict[str, Any]:
         self._validate_config()
+        self._validate_perfil_id_config()
         payload = {
             "ruta_id": str(data.ruta_id),
             "vehiculo_id": str(data.vehiculo_id),
@@ -109,6 +161,7 @@ class APIExternaService:
         data: RegistrarPosicionRequest,
     ) -> dict[str, Any]:
         self._validate_config()
+        self._validate_perfil_id_config()
         payload = {
             "lat": data.lat,
             "lon": data.lon,
@@ -165,6 +218,7 @@ class APIExternaService:
     ) -> tuple[str, dict[str, Any]]:
         """Crea vehículo en API externa. Devuelve (id_externo_uuid, respuesta_json)."""
         self._validate_config()
+        self._validate_perfil_id_config()
         payload: dict[str, Any] = {
             "placa": placa,
             "perfil_id": self.perfil_id,
@@ -201,6 +255,7 @@ class APIExternaService:
     async def listar_vehiculos_externos(self) -> list[dict[str, Any]]:
         """Obtiene el catálogo de vehículos desde la API externa."""
         self._validate_config()
+        self._validate_perfil_id_config()
         params: dict[str, str] = {}
         if self.perfil_id:
             params["perfil_id"] = self.perfil_id
