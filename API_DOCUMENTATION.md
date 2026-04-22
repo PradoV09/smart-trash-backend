@@ -3,7 +3,7 @@
 > **Proyecto:** `smart-trash-backend`
 > **Framework:** FastAPI
 > **Versión:** `1.0.2`
-> **Autor:** `Heiner Jair Godoy Zamora`
+> **Autor:** `Heiner Jair Godoy Zamora y Jose Luis Prado Valencia`
 > **Fecha de revisión:** `2 de abril de 2026`
 
 ---

@@ -11,7 +11,7 @@ Características principales:
 - 🗺️ Integración con API externa de rutas
 - 📊 Reportes y estadísticas operativas
 
-Autor: Heiner Jair Godoy Zamora
+Autor: Heiner Jair Godoy Zamora y Jose Luis Prado Valencia
 Versión: 1.0.0
 """
 

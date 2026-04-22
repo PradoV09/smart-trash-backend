@@ -1,7 +1,7 @@
 # 🧠 Guía técnica interna del código
 
 > **Proyecto:** `smart-trash-backend`
-> **Autor:** `Heiner Jair Godoy Zamora`
+> **Autor:** `Heiner Jair Godoy Zamora y Jose Luis Prado Valencia`
 > **Propósito:** un mapa de alto nivel para entender, mantener y escalar el backend.
 
 ---
