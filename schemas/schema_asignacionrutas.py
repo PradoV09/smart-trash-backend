@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from models.model_asignacionrutas import EstadoAsignacion
 from schemas.schema_vehiculo import VehiculoResponse
-from schemas.schema_asignaciontripulacion import TripulacionResponse
+from schemas.schema_tripulacion import TripulacionResponse
 from fastapi import Form
 
 class AsignacionCreate(BaseModel):
@@ -23,14 +23,14 @@ class AsignacionCreate(BaseModel):
     def as_form(
         cls,
         id_vehiculo: int = Form(..., gt=0),
-        id_tripulacion: int = Form(..., gt=0),
         id_ruta: str = Form(..., min_length=1),
+        id_tripulacion: int = Form(..., gt=0),
         fecha: datetime = Form(...),
     ):
         return cls(
             id_vehiculo=id_vehiculo,
-            id_tripulacion=id_tripulacion,
             id_ruta=id_ruta,
+            id_tripulacion=id_tripulacion,
             fecha=fecha,
         )
 
@@ -58,7 +58,7 @@ class AsignacionResponse(BaseModel):
     estado:        EstadoAsignacion
     created_at:    datetime
     vehiculo:      VehiculoResponse
-    tripulacion:   list[TripulacionResponse]
+    tripulacion:   Optional[TripulacionResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 

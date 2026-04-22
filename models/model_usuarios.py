@@ -26,4 +26,5 @@ class Usuario(Base):
     perfil             = relationship("Perfil", back_populates="usuario")
     rol                = relationship("Rol", back_populates="usuarios")
     reportes_actividad = relationship("ReporteActividad", back_populates="usuario")
-    tripulaciones      = relationship("TripulacionAsignacion", back_populates="usuario") 
+    tripulaciones_legacy = relationship("TripulacionAsignacion", back_populates="usuario")
+    miembros_tripulacion = relationship("TripulacionMiembro", back_populates="usuario")

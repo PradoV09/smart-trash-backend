@@ -15,7 +15,7 @@ class RutasExternoService:
         # URL base de la API externa de rutas (configurar en settings)
         self.base_url = getattr(settings, 'RUTAS_API_URL', 'http://localhost:8001')  # Cambiar cuando tengas la API
 
-    async def obtener_ruta_por_id(self, id_ruta: int) -> Optional[Dict[str, Any]]:
+    async def obtener_ruta_por_id(self, id_ruta: Any) -> Optional[Dict[str, Any]]:
         """Obtiene los detalles de una ruta por su ID desde la API externa."""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -31,7 +31,7 @@ class RutasExternoService:
             print(f"Error conectando con API de rutas: {e}")
             return None
 
-    async def crear_ruta(self, datos_ruta: Dict[str, Any]) -> Optional[int]:
+    async def crear_ruta(self, datos_ruta: Dict[str, Any]) -> Optional[Any]:
         """Crea una nueva ruta en la API externa y devuelve el ID."""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -46,7 +46,7 @@ class RutasExternoService:
             print(f"Error conectando con API de rutas: {e}")
             return None
 
-    async def validar_ruta_existe(self, id_ruta: int) -> bool:
+    async def validar_ruta_existe(self, id_ruta: Any) -> bool:
         """Verifica si una ruta existe en la API externa."""
         ruta = await self.obtener_ruta_por_id(id_ruta)
         return ruta is not None

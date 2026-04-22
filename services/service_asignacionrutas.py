@@ -9,14 +9,17 @@ tripulación y eventos WebSocket del recorrido.
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from typing import Any
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 from models.model_asignacionrutas import AsignacionRutas, EstadoAsignacion
 from models.model_asignaciontripulacion import TripulacionAsignacion
+from models.model_tripulacion import Tripulacion, TripulacionMiembro
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
 from schemas.schema_asignacionrutas import AsignacionCreate
 from core.websocket_manager import ws_manager
-from services.service_rutas_externo import RutasExternoService
+from services.service_api_externa import APIExternaService
+from models.model_usuarios import Usuario
 
 
 class AsignacionService:
@@ -30,39 +33,54 @@ class AsignacionService:
             select(AsignacionRutas)
             .options(
                 selectinload(AsignacionRutas.vehiculo),
-                selectinload(AsignacionRutas.tripulacion),
+                selectinload(AsignacionRutas.tripulacion).selectinload(Tripulacion.miembros).selectinload(TripulacionMiembro.usuario).selectinload(Usuario.perfil),
+                selectinload(AsignacionRutas.tripulacion).selectinload(Tripulacion.miembros).selectinload(TripulacionMiembro.usuario).selectinload(Usuario.rol),
             )
         )
 
     async def crear_asignacion(self, data: AsignacionCreate) -> AsignacionRutas:
-        """Crea una asignación nueva si el vehículo existe y está disponible."""
-        # Validar que la ruta existe en la API externa
-        rutas_service = RutasExternoService()
-        ruta_existe = await rutas_service.validar_ruta_existe(data.id_ruta)
-        if not ruta_existe:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"La ruta con id {data.id_ruta} no existe en el servicio de rutas.",
-            )
+        """Crea una asignación nueva vinculando vehículo y tripulación."""
+        # 1. Validar Ruta (con fallback por si falla el fetch individual de la API externa)
+        api_service = APIExternaService()
+        ruta_valida = False
+        try:
+            await api_service.obtener_ruta(data.id_ruta)
+            ruta_valida = True
+        except HTTPException as e:
+            if e.status_code == 404:
+                raise HTTPException(status_code=400, detail=f"Ruta {data.id_ruta} no encontrada.")
+            
+            # Fallback: Intentar buscar en la lista completa si el fetch individual falla (500 o similar)
+            try:
+                resp = await api_service.listar_rutas()
+                rutas = resp.get("data", []) if isinstance(resp, dict) else resp
+                if any(r.get("id") == data.id_ruta for r in rutas):
+                    ruta_valida = True
+            except Exception:
+                # Si fallan ambos, pero el error original fue un 500 de la API externa,
+                # para no bloquear al usuario si la API es inestable, podríamos dejarlo pasar
+                # pero es mejor ser estrictos o registrar el error.
+                pass
+            
+            if not ruta_valida:
+                raise e # Re-lanzar el error original si el fallback también falló o no encontró la ruta
 
-        result = await self.db.execute(
-            select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo)
-        )
-        vehiculo = result.scalar_one_or_none()
-        if not vehiculo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró el vehículo con id {data.id_vehiculo} para crear la asignación.",
-            )
-        if vehiculo.estado != EstadoVehiculo.disponible:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"El vehículo con id {data.id_vehiculo} no está disponible para asignación. Estado actual: {vehiculo.estado.value}.",
-            )
+        # 2. Validar Vehículo
+        res_v = await self.db.execute(select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo))
+        vehiculo = res_v.scalar_one_or_none()
+        if not vehiculo or vehiculo.estado != EstadoVehiculo.disponible:
+            raise HTTPException(status_code=400, detail="Vehículo no disponible.")
+
+        # 3. Validar Tripulación (Nuevo)
+        from models.model_tripulacion import Tripulacion
+        res_t = await self.db.execute(select(Tripulacion).where(Tripulacion.id_tripulacion == data.id_tripulacion))
+        if not res_t.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Tripulación no encontrada.")
+
         asignacion = AsignacionRutas(**data.model_dump())
         self.db.add(asignacion)
         await self.db.flush()
-        return asignacion
+        return await self.obtener_asignacion_id(asignacion.id_asignacion)
 
     async def obtener_asignaciones(self) -> list[AsignacionRutas]:
         result = await self.db.execute(self._con_relaciones())
@@ -117,6 +135,17 @@ class AsignacionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"La asignación {id_asignacion} no se puede iniciar porque su estado actual es '{asignacion.estado.value}'.",
             )
+
+        # Regla de Negocio: Validar estructura obligatoria (1 conductor + 3 recolectores)
+        from services.service_asignaciontripulacion import TripulacionService
+        trip_service = TripulacionService(self.db)
+        if not await trip_service.validar_tripulacion(id_asignacion):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No se puede iniciar la asignación {id_asignacion}: la tripulación no cumple "
+                       "la estructura reglamentaria obligatoria (1 conductor y 3 recolectores)."
+            )
+
         no_confirmados = [t for t in asignacion.tripulacion if not t.confirmado]
         if no_confirmados:
             raise HTTPException(
@@ -176,7 +205,19 @@ class AsignacionService:
         })
         return asignacion
 
-    async def obtener_detalles_ruta(self, id_ruta: int) -> dict | None:
+    async def obtener_detalles_ruta(self, id_ruta: str) -> dict | None:
         """Obtiene los detalles completos de una ruta desde la API externa."""
-        rutas_service = RutasExternoService()
-        return await rutas_service.obtener_ruta_por_id(id_ruta)
+        api_service = APIExternaService()
+        try:
+            return await api_service.obtener_ruta(id_ruta)
+        except HTTPException:
+            # Fallback: buscar en la lista
+            try:
+                resp = await api_service.listar_rutas()
+                rutas = resp.get("data", []) if isinstance(resp, dict) else resp
+                for r in rutas:
+                    if r.get("id") == id_ruta:
+                        return r
+            except Exception:
+                pass
+            return None

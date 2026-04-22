@@ -22,9 +22,7 @@ from schemas.schema_asignacionrutas import (
     AsignacionResponse,
     AsignacionPublicResponse,
 )
-from schemas.schema_asignaciontripulacion import TripulacionCreate, TripulacionResponse
 from services.service_asignacionrutas import AsignacionService
-from services.service_asignaciontripulacion import TripulacionService
 from models.model_usuarios import Usuario
 from fastapi import HTTPException, status
 
@@ -83,31 +81,6 @@ async def cancelar_asignacion(
     return success_response(data=asignacion, message="Asignación cancelada exitosamente.")
 
 
-async def agregar_miembro_tripulacion(
-    id_asignacion: int,
-    data: TripulacionCreate = Depends(TripulacionCreate.as_form),
-    db: AsyncSession = Depends(get_db),
-    _: Usuario = AdminDep,
-) -> TripulacionResponse:
-    """Agrega un usuario a la tripulación de una asignación pendiente."""
-    miembro = await TripulacionService(db).agregar_miembro(id_asignacion, data)
-    return success_response(data=miembro, message="Miembro agregado a la tripulación exitosamente.")
-
-
-async def eliminar_miembro_tripulacion(
-    id_asignacion: int,
-    id_usuario: int,
-    db: AsyncSession = Depends(get_db),
-    _: Usuario = AdminDep,
-) -> dict:
-    """Elimina un integrante de la tripulación mientras la asignación siga pendiente."""
-    await TripulacionService(db).eliminar_miembro_asignacion(id_asignacion, id_usuario)
-    return success_response(
-        data={"id_asignacion": id_asignacion, "id_usuario": id_usuario},
-        message="Miembro eliminado de la tripulación exitosamente.",
-    )
-
-
 # --- Driver ---
 async def ver_asignacion_driver(
     id_asignacion: int,
@@ -148,17 +121,6 @@ async def ver_asignacion_recolector(
     """Permite al recolector consultar los datos de su asignación."""
     asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
     return success_response(data=asignacion, message="Asignación del recolector obtenida exitosamente.")
-
-
-async def confirmar_participacion(
-    id_asignacion: int,
-    id_usuario: int,
-    db: AsyncSession = Depends(get_db),
-    _: Usuario = RecolectorDep,
-) -> TripulacionResponse:
-    """Confirma la participación del integrante y deja trazabilidad en tiempo real."""
-    miembro = await TripulacionService(db).confirmar_asignacion(id_asignacion, id_usuario)
-    return success_response(data=miembro, message="Participación confirmada exitosamente.")
 
 
 # --- User ciudadano ---

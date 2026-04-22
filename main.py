@@ -54,10 +54,7 @@ from routers.router_asignacionrutas import (
     router_driver as asignacion_driver_router,
     router_user as asignacion_user_router,
 )
-from routers.router_asignaciontripulacion import (
-    router_admin as tripulacion_admin_router,
-    router_driver as tripulacion_driver_router,
-)
+from routers.router_tripulacion import router as tripulacion_router
 from scripts.seed_admin import seed_admin
 
 # ============================================================================
@@ -233,9 +230,8 @@ app.include_router(asignacion_admin_router)
 app.include_router(asignacion_driver_router)
 app.include_router(asignacion_user_router)
 
-# 👥 Tripulación de asignaciones (diferentes roles)
-app.include_router(tripulacion_admin_router)
-app.include_router(tripulacion_driver_router)
+# 👥 Tripulaciones (Gestión de equipos independientes)
+app.include_router(tripulacion_router)
 
 # ============================================================================
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación

@@ -26,9 +26,9 @@ class TripulacionCreate(BaseModel):
         )
 
 class TripulacionResponse(BaseModel):
-
-    id_tripulacion:              int
-    id_asignacion:   int
+    id:              int
+    id_tripulacion:  int
+    id_asignacion:   Optional[int] = None
     id_usuario:      int
     rol_tripulacion: RolTripulacion
     confirmado:      bool
