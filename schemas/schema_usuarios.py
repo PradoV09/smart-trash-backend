@@ -33,6 +33,21 @@ class UsuarioAdminCreate(BaseModel):
             raise ValueError("El nombre del usuario es obligatorio y no puede ser solo espacios.")
         return s
 
+    @field_validator('contraseña')
+    @classmethod
+    def validate_password_policy(cls, value):
+        if len(value) < 8:
+            raise ValueError('La contraseña debe tener al menos 8 caracteres')
+        if not re.search(r'[A-Z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not re.search(r'[a-z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        if not re.search(r'\d', value):
+            raise ValueError('La contraseña debe contener al menos un número')
+        if not re.search(r'[!@#$%^&*()-_=+\[\]{}|;:\'",.<>/?`~]', value):
+            raise ValueError('La contraseña debe contener al menos un carácter especial')
+        return value
+
     @field_validator('correo')
     @classmethod
     def validate_correo(cls, value):
@@ -72,6 +87,21 @@ class UsuarioPublicCreate(BaseModel):
         if not re.match(pattern, value):
             raise ValueError('Correo inválido')
         return value.lower()
+
+    @field_validator('contraseña')
+    @classmethod
+    def validate_password_policy(cls, value):
+        if len(value) < 8:
+            raise ValueError('La contraseña debe tener al menos 8 caracteres')
+        if not re.search(r'[A-Z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not re.search(r'[a-z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        if not re.search(r'\d', value):
+            raise ValueError('La contraseña debe contener al menos un número')
+        if not re.search(r'[!@#$%^&*()-_=+\[\]{}|;:\'",.<>/?`~]', value):
+            raise ValueError('La contraseña debe contener al menos un carácter especial')
+        return value
     # rol y perfil se asignan automáticamente como "user"
 
     @classmethod
@@ -102,6 +132,23 @@ class UsuarioUpdate(BaseModel):
         if not re.match(pattern, value):
             raise ValueError('Correo inválido')
         return value.lower()
+
+    @field_validator('contraseña')
+    @classmethod
+    def validate_password_policy(cls, value):
+        if value is None:
+            return value
+        if len(value) < 8:
+            raise ValueError('La contraseña debe tener al menos 8 caracteres')
+        if not re.search(r'[A-Z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not re.search(r'[a-z]', value):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        if not re.search(r'\d', value):
+            raise ValueError('La contraseña debe contener al menos un número')
+        if not re.search(r'[!@#$%^&*()-_=+\[\]{}|;:\'",.<>/?`~]', value):
+            raise ValueError('La contraseña debe contener al menos un carácter especial')
+        return value
 
     @classmethod
     def as_form(

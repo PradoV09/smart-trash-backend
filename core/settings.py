@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     PERFIL_ID:           str = ""
     # Opcional: backend JSON (vehículos, rutas /api/*). Si no va, ver resolve en config.py
     INTEGRACION_API_URL: str = ""
+    
+    # Configuración de Correo
+    EMAIL_USER:          str = ""
+    EMAIL_PASS:          str = ""
+    SMTP_SERVER:         str = "smtp.gmail.com"
+    SMTP_PORT:           int = 587
 
     @property
     def cors_list(self) -> List[str]:
