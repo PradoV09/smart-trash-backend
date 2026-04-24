@@ -50,3 +50,14 @@ def get_external_api_config() -> ExternalAPIConfig:
     api_base_url = _resolver_url_base_api_externa()
     perfil_id = settings.PERFIL_ID.strip()
     return ExternalAPIConfig(api_base_url=api_base_url, perfil_id=perfil_id)
+
+
+@dataclass(frozen=True)
+class AppConfig:
+    """Configuración general de la aplicación."""
+    upload_dir: str = "uploads/fotos"
+
+
+def get_app_config() -> AppConfig:
+    """Retorna la configuración general de la aplicación."""
+    return AppConfig()

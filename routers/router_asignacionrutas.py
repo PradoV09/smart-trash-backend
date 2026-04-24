@@ -13,6 +13,7 @@ router_admin.get("",                                         response_model=Succ
 router_admin.get("/rutas/{id_ruta}",                          response_model=SuccessResponse[dict])(controller_asignacionrutas.obtener_detalles_ruta)
 router_admin.get("/{id_asignacion:int}",                      response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.obtener_asignacion_admin)
 router_admin.post("/{id_asignacion}/cancelar",                response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.cancelar_asignacion)
+router_admin.post("/{id_asignacion}/validar-piloto",          response_model=SuccessResponse[dict])(controller_asignacionrutas.validar_tripulacion_con_piloto)
 
 # Driver
 router_driver = APIRouter(prefix="/driver/asignaciones", tags=["Driver: Asignaciones"])

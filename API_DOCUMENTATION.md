@@ -2,7 +2,7 @@
 
 > **Proyecto:** `smart-trash-backend`
 > **Framework:** FastAPI
-> **Versión:** `1.0.2`
+> **Versión:** `1.0.3`
 > **Autor:** `Heiner Jair Godoy Zamora y Jose Luis Prado Valencia`
 > **Fecha de revisión:** `23 de abril de 2026`
 
@@ -107,6 +107,7 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 | **Reportes**      | `model_reportes.py`, `schema_reportes.py`, `controller_reportes.py`                       |
 | **Roles**         | `model_roles.py`, `schema_roles.py`, `controller_roles.py`                                |
 | **Autenticación** | `model_auth.py`, `schema_auth.py`, `controller_auth.py`, `router_auth.py`                 |
+| **Fotos**         | `model_fotos.py`, `schema_fotos.py`, `controller_fotos.py`, `router_fotos.py`             |
 
 ---
 
@@ -461,27 +462,118 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 
 ### 4.11 Reportes (Admin)
 
-| Método | Ruta              | Descripción               | Rol   |
-| ------ | ----------------- | ------------------------- | ----- |
-| GET    | `/admin/reportes` | Listar todos los reportes | admin |
-| POST   | `/admin/reportes` | Crear nuevo reporte       | admin |
+| Método | Ruta                              | Descripción                        | Rol   |
+| ------ | --------------------------------- | ---------------------------------- | ----- |
+| GET    | `/admin/reportes`                 | Listar todos los reportes          | admin |
+| GET    | `/admin/reportes/{id_reporte}`    | Obtener reporte por ID             | admin |
+| PATCH  | `/admin/reportes/{id_reporte}/terminar` | Marcar reporte como terminado | admin |
 
-#### Parámetros - Crear Reporte
+#### Restricciones del Admin:
+
+- **NO puede crear reportes** - Solo puede visualizar los reportes creados por los conductores
+- **SOLO puede listar** todos los reportes del sistema
+- **Puede marcar como terminado** los reportes para indicar que han sido atendidos
+
+#### Parámetros - Marcar Reporte como Terminado
 
 - **Body (JSON)**:
 
 ```json
 {
-  "id_usuario": 5,
-  "descripcion": "Vehículo con problemas mecánicos",
-  "asunto": "Mantenimiento",
-  "evidencia_url": "https://ejemplo.com/foto.jpg"
+  "notas_terminacion": "Problema solucionado, vehículo operativo"
+}
+```
+
+#### Estados de Reportes
+
+| Estado | Descripción                     |
+| ------ | ------------------------------- |
+| `baja` | Incidente menor, baja prioridad |
+| `media`| Incidente moderado              |
+| `alta` | Incidente crítico, alta prioridad|
+
+### 4.12 Reportes (Driver)
+
+| Método | Ruta                              | Descripción                          | Rol    |
+| ------ | --------------------------------- | ------------------------------------ | ------ |
+| GET    | `/driver/reportes`                 | Listar reportes del conductor        | driver |
+| POST   | `/driver/reportes`                | Crear reporte con fotos              | driver |
+| GET    | `/driver/reportes/{id_reporte}`    | Obtener reporte por ID               | driver |
+
+#### Responsabilidades del Conductor:
+
+- **ÚNICAMENTE puede crear reportes** - Es el único rol que puede generar reportes operativos
+- **Adjuntar fotos como evidencia** - Las fotos sirven como prueba de lo que sucedió
+- **Definir el nivel de prioridad** - Establece si el incidente es baja, media o alta prioridad
+- **Notificación automática** - Al crear un reporte se notifica automáticamente al admin
+
+#### Parámetros - Crear Reporte con Fotos
+
+- **Body (JSON)**:
+
+```json
+{
+  "asunto": "Problema mecánico",
+  "descripcion": "El vehículo presenta fallos en el sistema de frenos",
+  "estado": "alta",
+  "fotos": [
+    {
+      "imagen_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
+      "tipo": "evidencia",
+      "timestamp": "2026-04-23T10:30:00Z"
+    }
+  ],
+  "id_asignacion": 45
+}
+```
+
+#### Restricciones:
+
+- `asunto`: máximo 100 caracteres
+- `descripcion`: requerido, máximo 1000 caracteres
+- `estado`: Enum (`baja`, `media`, `alta`) - **Definido por el conductor según la gravedad**
+- `fotos`: array opcional de fotos en base64 - **Sirven como evidencia del incidente**
+- `id_asignacion`: ID de la asignación actual (opcional)
+
+#### Flujo del Conductor:
+
+1. **Crear reporte**: El conductor crea reportes durante su recorrido para documentar incidentes
+2. **Adjuntar fotos**: Las fotos funcionan como prueba/evidencia de lo que ocurrió
+3. **Establecer prioridad**: El conductor define la urgencia (baja, media, alta) según el impacto
+4. **Notificación al admin**: Se envía automáticamente una notificación por WebSocket al admin
+
+#### Respuesta - Éxito (201 Created)
+
+```json
+{
+  "success": true,
+  "message": "Reporte creado exitosamente",
+  "data": {
+    "id_registro": 150,
+    "asunto": "Problema mecánico",
+    "descripcion": "El vehículo presenta fallos en el sistema de frenos",
+    "estado": "alta",
+    "fecha": "2026-04-23T10:30:00Z",
+    "id_usuario": 25,
+    "id_asignacion": 45,
+    "fotos": [
+      {
+        "id_foto": 200,
+        "url": "/uploads/fotos/45_abc123def456.jpg",
+        "tipo": "evidencia",
+        "timestamp_captura": "2026-04-23T10:30:00Z"
+      }
+    ],
+    "terminado": false,
+    "notas_terminacion": null,
+    "created_at": "2026-04-23T10:31:00Z"
+  }
 }
 ```
 
 ---
 
-### 4.12 Reportes (Público)
+### 4.13 Reportes (Público)
 
 | Método | Ruta        | Descripción                             | Rol     |
 | ------ | ----------- | --------------------------------------- | ------- |
@@ -526,7 +618,84 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 
 ---
 
-### 4.14 WebSockets
+### 4.14 Fotos (Driver)
+
+| Método | Ruta                                             | Descripción                          | Rol    |
+| ------ | ------------------------------------------------ | ------------------------------------ | ------ |
+| POST   | `/driver/asignaciones/{id_asignacion}/fotos`      | Registrar foto/evidencia del recorrido | driver |
+| GET    | `/driver/asignaciones/{id_asignacion}/fotos`      | Listar fotos de una asignación        | driver |
+
+#### Parámetros - Registrar Foto
+
+- **Body (JSON)**:
+
+```json
+{
+  "imagen_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
+  "tipo": "evidencia",
+  "timestamp": "2026-04-23T10:30:00Z"
+}
+```
+
+#### Restricciones:
+
+- `imagen_base64`: Formato `data:image/<tipo>;base64,<datos>` (jpg, png, gif, webp)
+- `tipo`: Enum (`evidencia`, `incidente`, `llegada`, `salida`, `completado`)
+- `timestamp`: ISO 8601 datetime, timezone aware
+- Solo se permite registrar fotos para asignaciones en estado `en_curso`
+
+#### Tipos de Foto
+
+| Tipo        | Descripción                           |
+| ----------- | ------------------------------------- |
+| `evidencia` | Evidencia general del recorrido        |
+| `incidente`  | Incidente o problema durante ruta     |
+| `llegada`   | Foto al llegar a destino             |
+| `salida`     | Foto al iniciar el recorrido         |
+| `completado` | Foto al finalizar el recorrido       |
+
+#### Respuesta - Éxito (201 Created)
+
+```json
+{
+  "success": true,
+  "message": "Foto registrada exitosamente",
+  "data": {
+    "id_foto": 123,
+    "id_asignacion": 45,
+    "url": "/uploads/fotos/45_abc123def456.jpg",
+    "tipo": "evidencia",
+    "timestamp_captura": "2026-04-23T10:30:00Z",
+    "created_at": "2026-04-23T10:31:00Z"
+  }
+}
+```
+
+#### Respuesta - Listar Fotos
+
+```json
+{
+  "success": true,
+  "message": "Fotos obtenidas exitosamente",
+  "data": {
+    "items": [
+      {
+        "id_foto": 123,
+        "id_asignacion": 45,
+        "url": "/uploads/fotos/45_abc123def456.jpg",
+        "tipo": "evidencia",
+        "timestamp_captura": "2026-04-23T10:30:00Z",
+        "created_at": "2026-04-23T10:31:00Z"
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+---
+
+### 4.15 WebSockets
 
 | Método | Ruta                                         | Descripción                        |
 | ------ | -------------------------------------------- | ---------------------------------- |
@@ -639,16 +808,57 @@ Smart Trash Route es un backend FastAPI para la gestión de rutas de recolecció
 
 ### 5.6 Reporte de Actividad (`ReporteActividad`)
 
-| Campo           | Tipo        | Requerido | Restricciones                       |
-| --------------- | ----------- | --------- | ----------------------------------- |
-| `id_registro`   | BigInteger  | Sí        | Primary Key                         |
-| `id_usuario`    | Integer     | No        | Foreign Key → `usuarios.id_usuario` |
-| `u_gmail_cache` | String(100) | No        | Cache de email                      |
-| `descripcion`   | Text        | Sí        | Descripción del reporte             |
-| `fecha`         | DateTime    | Sí        | Timezone aware, auto                |
-| `asunto`        | String(100) | Sí        | Asunto del reporte                  |
-| `evidencia_url` | String(255) | No        | URL de evidencia                    |
-| `u_rol_cache`   | String(20)  | No        | Cache de rol                        |
+| Campo               | Tipo        | Requerido | Restricciones                                |
+| ------------------- | ----------- | --------- | -------------------------------------------- |
+| `id_registro`       | BigInteger  | Sí        | Primary Key                                  |
+| `id_usuario`        | Integer     | Sí        | Foreign Key → `usuarios.id_usuario`          |
+| `id_asignacion`     | Integer     | No        | Foreign Key → `asignaciones_rutas.id_asignacion` |
+| `asunto`            | String(100) | Sí        | Asunto del reporte                          |
+| `descripcion`       | Text        | Sí        | Descripción del reporte                      |
+| `estado`            | Enum        | Sí        | `EstadoReporte` (baja, media, alta)         |
+| `fecha`             | DateTime    | Sí        | Timezone aware, auto                        |
+| `terminado`         | Boolean     | Sí        | Default `False`                              |
+| `notas_terminacion` | Text        | No        | Notas al marcar como terminado               |
+| `fecha_terminacion` | DateTime    | No        | Fecha en que se marcó como terminado         |
+| `created_at`        | DateTime    | Sí        | Timezone aware, auto                        |
+| `updated_at`        | DateTime    | Sí        | Timezone aware, auto                        |
+
+#### Estados de Reporte (`EstadoReporte`):
+
+- `baja` - Incidente menor, baja prioridad
+- `media` - Incidente moderado, prioridad media
+- `alta` - Incidente crítico, alta prioridad
+
+#### Relaciones:
+
+- `usuario` → `Usuario` (many-to-one)
+- `asignacion` → `AsignacionRutas` (many-to-one, opcional)
+- `fotos` → `RecorridoFoto` (one-to-many, a través de relación)
+
+---
+
+### 5.7 Foto del Recorrido (`RecorridoFoto`)
+
+| Campo              | Tipo        | Requerido | Restricciones                                |
+| ------------------ | ----------- | --------- | -------------------------------------------- |
+| `id_foto`          | Integer     | Sí        | Primary Key, Auto-increment                  |
+| `id_asignacion`    | Integer     | Sí        | Foreign Key → `asignaciones_rutas.id_asignacion` |
+| `url`              | String(255) | Sí        | URL de acceso a la imagen almacenada         |
+| `tipo`             | Enum        | Sí        | `TipoFoto`                                  |
+| `timestamp_captura`| DateTime    | Sí        | Timezone aware, momento de captura de la foto |
+| `created_at`       | DateTime    | Sí        | Timezone aware, auto                         |
+
+#### Tipos de Foto (`TipoFoto`):
+
+- `evidencia` - Evidencia general del recorrido
+- `incidente` - Incidente o problema durante la ruta
+- `llegada` - Foto al llegar al destino
+- `salida` - Foto al iniciar el recorrido
+- `completado` - Foto al finalizar el recorrido
+
+#### Relaciones:
+
+- `asignacion` → `AsignacionRutas` (many-to-one)
 
 ---
 
@@ -721,6 +931,28 @@ class ErrorDetailPayload(BaseModel):
 | `AsignacionUpdate`         | `estado?`, `hora_salida?`                           |
 | `AsignacionResponse`       | Respuesta con vehículo y tripulación                |
 | `AsignacionPublicResponse` | Versión pública para ciudadanos                     |
+
+---
+
+### 6.6 Esquemas de Reportes
+
+| Schema                     | Descripción                                    |
+| -------------------------- | ---------------------------------------------- |
+| `ReporteDriverCreate`      | `asunto`, `descripcion`, `estado`, `fotos?`, `id_asignacion?` |
+| `ReporteAdminResponse`     | Respuesta completa con fotos y relaciones      |
+| `ReporteDriverResponse`    | Versión para conductores                       |
+| `ReporteTerminadoUpdate`   | `notas_terminacion` para marcar como terminado |
+| `ReportePublicCreate`      | Para reportes públicos sin autenticación       |
+
+---
+
+### 6.7 Esquemas de Fotos
+
+| Schema              | Descripción                                    |
+| ------------------- | ---------------------------------------------- |
+| `FotoCreate`        | `imagen_base64`, `tipo`, `timestamp`           |
+| `FotoResponse`      | Respuesta completa con datos de la foto        |
+| `FotoListResponse`  | Lista paginada de fotos con contador total       |
 
 ---
 
@@ -921,6 +1153,120 @@ curl -X POST "http://localhost:8000/reportes" \
 }
 ```
 
+### 7.7 Crear Reporte con Fotos (Driver)
+
+#### Request
+
+```bash
+curl -X POST "http://localhost:8000/driver/reportes" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asunto": "Problema mecánico en frenos",
+    "descripcion": "Los frenos no responden adecuadamente, es peligroso continuar",
+    "estado": "alta",
+    "id_asignacion": 45,
+    "fotos": [
+      {
+        "imagen_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
+        "tipo": "evidencia",
+        "timestamp": "2026-04-23T10:30:00Z"
+      },
+      {
+        "imagen_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQBBB...",
+        "tipo": "incidente",
+        "timestamp": "2026-04-23T10:31:00Z"
+      }
+    ]
+  }'
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "success": true,
+  "message": "Reporte creado exitosamente",
+  "data": {
+    "id_registro": 150,
+    "asunto": "Problema mecánico en frenos",
+    "descripcion": "Los frenos no responden adecuadamente, es peligroso continuar",
+    "estado": "alta",
+    "fecha": "2026-04-23T10:30:00Z",
+    "id_usuario": 25,
+    "id_asignacion": 45,
+    "terminado": false,
+    "notas_terminacion": null,
+    "fotos": [
+      {
+        "id_foto": 200,
+        "url": "/uploads/fotos/45_abc123def456.jpg",
+        "tipo": "evidencia",
+        "timestamp_captura": "2026-04-23T10:30:00Z"
+      },
+      {
+        "id_foto": 201,
+        "url": "/uploads/fotos/45_def789ghi012.jpg",
+        "tipo": "incidente",
+        "timestamp_captura": "2026-04-23T10:31:00Z"
+      }
+    ],
+    "created_at": "2026-04-23T10:32:00Z",
+    "updated_at": "2026-04-23T10:32:00Z"
+  }
+}
+```
+
+### 7.8 Marcar Reporte como Terminado (Admin)
+
+#### Request
+
+```bash
+curl -X PATCH "http://localhost:8000/admin/reportes/150/terminar" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notas_terminacion": "Mecánico revisó y reemplazó pastillas de freno. Vehículo operativo."
+  }'
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Reporte marcado como terminado exitosamente",
+  "data": {
+    "id_registro": 150,
+    "asunto": "Problema mecánico en frenos",
+    "descripcion": "Los frenos no responden adecuadamente, es peligroso continuar",
+    "estado": "alta",
+    "fecha": "2026-04-23T10:30:00Z",
+    "id_usuario": 25,
+    "id_asignacion": 45,
+    "terminado": true,
+    "notas_terminacion": "Mecánico revisó y reemplazó pastillas de freno. Vehículo operativo.",
+    "fecha_terminacion": "2026-04-23T14:15:00Z",
+    "fotos": [
+      {
+        "id_foto": 200,
+        "url": "/uploads/fotos/45_abc123def456.jpg",
+        "tipo": "evidencia",
+        "timestamp_captura": "2026-04-23T10:30:00Z"
+      },
+      {
+        "id_foto": 201,
+        "url": "/uploads/fotos/45_def789ghi012.jpg",
+        "tipo": "incidente",
+        "timestamp_captura": "2026-04-23T10:31:00Z"
+      }
+    ],
+    "created_at": "2026-04-23T10:32:00Z",
+    "updated_at": "2026-04-23T14:15:00Z"
+  }
+}
+```
+
 ---
 
 ## 8. Funcionalidades Críticas
@@ -1020,6 +1366,7 @@ if vehiculo_en_ruta:
 | **Recorridos (Ext)**   | ✅            | 2         | 0       | 3       | ❌    |
 | **Reportes (Admin)**   | ✅            | 2         | 1       | 2       | ✅    |
 | **Reportes (Público)** | ✅            | 1         | 1       | 2       | ✅    |
+| **Fotos**             | ✅            | 2         | 1       | 3       | ❌    |
 | **WebSockets**         | ✅            | 2         | 1       | 0       | ✅    |
 
 ### 9.2 Funcionalidades Implementadas vs Faltantes
@@ -1034,12 +1381,12 @@ if vehiculo_en_ruta:
 | Gestión Tripulación                    | ✅           | -                      |
 | Reportes Admin                         | ✅           | -                      |
 | Reportes Públicos                      | ✅           | -                      |
+| Fotos Base64                           | ✅           | -                      |
 | WebSockets                             | ✅           | -                      |
 | Integración API Rutas                  | ✅           | -                      |
 | Integración API Recorridos             | ✅           | -                      |
 | Geolocalización (envío)                | ✅           | -                      |
 | Geolocalización (almacenamiento local) | ❌           | Tabla posiciones       |
-| Fotos Base64                           | ❌           | Endpoint upload        |
 | Sincronización offline                 | ❌           | Lógica sync            |
 | Historial de hitos                     | ❌           | Tabla auditoría        |
 | Duración máx. 24h recorrido            | ❌           | Validación             |

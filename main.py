@@ -211,6 +211,10 @@ app.include_router(vehiculo_router)
 # 📊 Reportes y estadísticas (Admin - gestión)
 app.include_router(reporte_router)
 
+# 📊 Reportes de conductores (Driver - creación y gestión)
+from routers.router_driver_reportes import router as driver_reporte_router
+app.include_router(driver_reporte_router)
+
 # 📢 Reportes públicos (Ciudadanos - sin autenticación)
 app.include_router(reporte_publico_router)
 
@@ -232,6 +236,22 @@ app.include_router(asignacion_user_router)
 
 # 👥 Tripulaciones (Gestión de equipos independientes)
 app.include_router(tripulacion_router)
+
+# 📍 Posiciones GPS del recorrido (Driver + Admin)
+from routers.router_posiciones import router_driver as posiciones_driver_router
+from routers.router_posiciones import router_admin as posiciones_admin_router
+app.include_router(posiciones_driver_router)
+app.include_router(posiciones_admin_router)
+
+# 📷 Fotos/Evidencia del recorrido (Driver + Admin)
+from routers.router_fotos import router_driver as fotos_driver_router
+from routers.router_fotos import router_admin as fotos_admin_router
+app.include_router(fotos_driver_router)
+app.include_router(fotos_admin_router)
+
+# 📊 Estado en vivo (Admin only)
+from routers.router_estado_vivo import router as estado_vivo_router
+app.include_router(estado_vivo_router)
 
 # ============================================================================
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación

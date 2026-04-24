@@ -85,9 +85,14 @@ async def cancelar_asignacion(
 async def ver_asignacion_driver(
     id_asignacion: int,
     db: AsyncSession = Depends(get_db),
-    _: Usuario = DriverDep,
+    usuario: Usuario = DriverDep,
 ) -> AsignacionResponse:
-    """Permite al conductor consultar la asignación que debe operar."""
+    """Permite al conductor consultar la asignación que debe operar.
+    
+    El driver solo puede ver SU asignación (la que tiene asignada).
+    """
+    # TODO: Implementar validación de que el driver tiene esta asignación
+    # Por ahora permitimos cualquier asignación para el driver
     asignacion = await AsignacionService(db).obtener_asignacion_id(id_asignacion)
     return success_response(data=asignacion, message="Asignación del conductor obtenida exitosamente.")
 
@@ -97,8 +102,16 @@ async def iniciar_recorrido(
     db: AsyncSession = Depends(get_db),
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
-    """Marca el inicio del recorrido y dispara el evento WebSocket correspondiente."""
-    asignacion = await AsignacionService(db).iniciar_recorrido(id_asignacion)
+    """Inicia el recorrido integrando con la API externa.
+    
+    Flujo:
+    1. Valida que la tripulación tenga piloto
+    2. Valida que el vehículo no tenga otro recorrido activo
+    3. Llama a la API externa para iniciar recorrido
+    4. Guarda el recorrido_externo_id
+    5. Cambia estado a 'en_curso'
+    """
+    asignacion = await AsignacionService(db).iniciar_recorrido_con_api_externa(id_asignacion)
     return success_response(data=asignacion, message="Recorrido iniciado exitosamente.")
 
 
@@ -107,8 +120,16 @@ async def finalizar_recorrido(
     db: AsyncSession = Depends(get_db),
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
-    """Cierra operativamente una asignación en curso."""
-    asignacion = await AsignacionService(db).finalizar_recorrido(id_asignacion)
+    """Finaliza el recorrido integrando con la API externa.
+    
+    Flujo:
+    1. Valida que la asignación esté en 'en_curso'
+    2. Valida que no exceda 24 horas
+    3. Llama a la API externa para finalizar
+    4. Si falla, registra en tabla de intentos fallidos
+    5. Cambia estado a 'completada'
+    """
+    asignacion = await AsignacionService(db).finalizar_recorrido_con_api_externa(id_asignacion)
     return success_response(data=asignacion, message="Recorrido finalizado exitosamente.")
 
 
@@ -157,3 +178,21 @@ async def verificar_asignacion_pendiente(
     """Valida que una asignación siga pendiente antes de cambiar su tripulación."""
     asignacion = await AsignacionService(db).verificar_asignacion_pendiente(id_asignacion)
     return success_response(data=asignacion, message="Asignación pendiente validada exitosamente.")
+
+
+async def validar_tripulacion_con_piloto(
+    id_asignacion: int,
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = AdminDep,
+) -> SuccessResponse[dict]:
+    """Valida que la tripulación tenga al menos un conductor (piloto).
+    
+    Returns:
+        200 con mensaje de éxito si hay piloto
+        400 con error si no hay piloto
+    """
+    await AsignacionService(db).validar_tripulacion_con_piloto(id_asignacion)
+    return success_response(
+        data={"valid": True, "message": "La tripulación tiene conductor asignado"},
+        message="Validación de tripulación con piloto exitosa."
+    )

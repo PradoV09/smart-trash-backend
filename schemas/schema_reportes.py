@@ -3,7 +3,7 @@
 Definen el payload de entrada para registrar actividad y la estructura de salida.
 """
 
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
@@ -47,3 +47,54 @@ class ReporteResponse(BaseModel):
     fecha:         datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# Schema para crear reportes como conductor con fotos y prioridad
+class ReporteDriverCreate(BaseModel):
+    asunto: str
+    descripcion: str
+    estado: str  # baja, media, alta
+    fotos: Optional[List[dict]] = None  # Array de fotos en base64
+    id_asignacion: Optional[int] = None
+
+# Response para conductores (adaptado al modelo real)
+class ReporteDriverResponse(BaseModel):
+    id_registro: int
+    asunto: str
+    descripcion: str
+    fecha: datetime
+    id_usuario: Optional[int] = None
+    u_gmail_cache: Optional[str] = None
+    u_rol_cache: Optional[str] = None  # Aquí guardamos el estado como workaround
+    evidencia_url: Optional[str] = None
+    # Campos virtuales para mantener compatibilidad con la API
+    estado: Optional[str] = None  # Se extraerá de u_rol_cache
+    terminado: Optional[bool] = False  # Se detectará de la descripción
+    fotos: Optional[List[dict]] = None
+
+    model_config = ConfigDict(from_attributes=True)
+    
+    @classmethod
+    def from_reporte_actividad(cls, reporte: 'ReporteActividad'):
+        """Crea response desde ReporteActividad extrayendo estado y terminado."""
+        # Extraer estado de u_rol_cache
+        estado = reporte.u_rol_cache if reporte.u_rol_cache in ['baja', 'media', 'alta'] else None
+        
+        # Detectar si está terminado por la descripción
+        terminado = '[TERMINADO:' in reporte.descripcion if reporte.descripcion else False
+        
+        return cls(
+            id_registro=reporte.id_registro,
+            asunto=reporte.asunto,
+            descripcion=reporte.descripcion,
+            fecha=reporte.fecha,
+            id_usuario=reporte.id_usuario,
+            u_gmail_cache=reporte.u_gmail_cache,
+            u_rol_cache=reporte.u_rol_cache,
+            evidencia_url=reporte.evidencia_url,
+            estado=estado,
+            terminado=terminado
+        )
+
+# Schema para marcar reporte como terminado
+class ReporteTerminadoUpdate(BaseModel):
+    notas_terminacion: str
