@@ -28,7 +28,9 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+import os
 
 # ============================================================================
 # IMPORTS - Módulos locales
@@ -252,6 +254,15 @@ app.include_router(fotos_admin_router)
 # 📊 Estado en vivo (Admin only)
 from routers.router_estado_vivo import router as estado_vivo_router
 app.include_router(estado_vivo_router)
+
+# 📂 Archivos estáticos (Fotos y evidencia)
+upload_dir = "uploads"
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir)
+    # Crear también el subdirectorio fotos para evitar errores iniciales
+    os.makedirs(os.path.join(upload_dir, "fotos"), exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ============================================================================
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación

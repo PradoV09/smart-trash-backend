@@ -19,20 +19,22 @@ async def registrar_foto(
     db: AsyncSession = Depends(get_db),
     _: Usuario = DriverDep,
 ) -> SuccessResponse[FotoResponse]:
-    """Registra una nueva foto/evidencia para una asignación.
-    
-    El driver solo puede registrar fotos en asignaciones que:
-    - Le pertenezcan
-    - Estén en estado 'en_curso'
-    """
-    service = FotosService(db)
-    
-    foto = await service.registrar_foto(id_asignacion, data)
-    
-    return success_response(
-        data=foto,
-        message="Foto registrada exitosamente."
-    )
+    """Registra una nueva foto/evidencia para una asignación."""
+    try:
+        service = FotosService(db)
+        foto = await service.registrar_foto(id_asignacion, data)
+        return success_response(
+            data=foto,
+            message="Foto registrada exitosamente."
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al registrar foto en asignación {id_asignacion}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno al registrar la foto: {str(e)}"
+        )
 
 
 async def listar_fotos_admin(
@@ -41,11 +43,16 @@ async def listar_fotos_admin(
     _: Usuario = AdminDep,
 ) -> SuccessResponse[FotoListResponse]:
     """Lista todas las fotos de una asignación."""
-    service = FotosService(db)
-    
-    result = await service.listar_fotos(id_asignacion)
-    
-    return success_response(
-        data=result,
-        message="Fotos obtenidas exitosamente."
-    )
+    try:
+        service = FotosService(db)
+        result = await service.listar_fotos(id_asignacion)
+        return success_response(
+            data=result,
+            message="Fotos obtenidas exitosamente."
+        )
+    except Exception as e:
+        logger.error(f"Error al listar fotos de asignación {id_asignacion}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al recuperar la lista de fotos."
+        )

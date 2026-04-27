@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models.model_reportes import ReporteActividad
 from schemas.schema_reportes import ReporteCreate
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ReporteService:
@@ -62,7 +65,7 @@ class ReporteService:
         
         return reporte
 
-    async def crear_reporte_conductor(self, data, id_usuario: int) -> ReporteActividad:
+    async def crear_reporte_conductor(self, data, id_usuario: int, u_gmail_cache: str | None = None) -> ReporteActividad:
         """Crea un reporte como conductor con fotos y prioridad."""
         from datetime import datetime
         
@@ -74,6 +77,7 @@ class ReporteService:
         # Usar datetime sin timezone para compatibilidad con la BD
         reporte = ReporteActividad(
             id_usuario=id_usuario,
+            u_gmail_cache=u_gmail_cache,
             asunto=data.asunto,
             descripcion=descripcion_con_estado,
             u_rol_cache=data.estado,  # Guardamos el estado aquí como workaround
@@ -83,11 +87,63 @@ class ReporteService:
         self.db.add(reporte)
         await self.db.flush()
         
-        # TODO: Procesar fotos si existen
-        # if data.fotos:
-        #     await self._procesar_fotos(reporte.id_registro, data.fotos)
+        # Procesar fotos si existen
+        if hasattr(data, 'fotos') and data.fotos:
+            await self._procesar_fotos(reporte, data.fotos, getattr(data, 'id_asignacion', None))
         
         return reporte
+
+    async def _procesar_fotos(self, reporte: ReporteActividad, fotos_data: list[dict], id_asignacion: int | None = None):
+        """Procesa las fotos enviadas en un reporte de conductor."""
+        from services.service_fotos import FotosService
+        from schemas.schema_fotos import FotoCreate
+        from datetime import datetime
+        
+        fotos_service = FotosService(self.db)
+        urls = []
+        
+        for foto_dict in fotos_data:
+            try:
+                # Normalizar nombres de campos comunes para FotoCreate
+                if 'base64' in foto_dict and 'imagen_base64' not in foto_dict:
+                    foto_dict['imagen_base64'] = foto_dict['base64']
+                
+                # Si hay id_asignacion, intentamos el flujo formal de registro de fotos
+                if id_asignacion:
+                    try:
+                        # Aseguramos que el dict tenga los campos necesarios para FotoCreate
+                        if 'timestamp' not in foto_dict or not foto_dict['timestamp']:
+                            foto_dict['timestamp'] = datetime.now()
+                        if 'tipo' not in foto_dict or not foto_dict['tipo']:
+                            foto_dict['tipo'] = 'incidencia'
+                            
+                        # Si sigue faltando imagen_base64, saltamos esta foto o registramos el error
+                        if 'imagen_base64' not in foto_dict:
+                            logger.error(f"Foto omitida: falta el contenido base64. Campos presentes: {list(foto_dict.keys())}")
+                            continue
+
+                        foto_create = FotoCreate(**foto_dict)
+                        res = await fotos_service.registrar_foto(id_asignacion, foto_create)
+                        urls.append(res.url)
+                    except Exception as e:
+                        logger.warning(f"No se pudo registrar foto formalmente para asignación {id_asignacion}: {str(e)}. Reintentando flujo simple.")
+                        # Si falla (ej. asignación no en curso), intentamos flujo simple
+                        id_asignacion = None 
+                
+                if not id_asignacion:
+                    # Flujo simplificado: solo guardar el archivo
+                    if 'imagen_base64' in foto_dict:
+                        datos_imagen, extension = fotos_service._validar_imagen_base64(foto_dict['imagen_base64'])
+                        url = await fotos_service._guardar_imagen(datos_imagen, extension, reporte.id_usuario or 0)
+                        urls.append(url)
+            except Exception as e:
+                logger.error(f"Error crítico procesando foto en reporte: {str(e)}")
+                continue
+        
+        if urls:
+            # Guardamos la primera URL en el reporte como evidencia principal
+            reporte.evidencia_url = urls[0]
+            await self.db.flush()
 
     async def obtener_reportes_conductor(self, id_usuario: int) -> list[ReporteActividad]:
         """Obtiene los reportes de un conductor específico."""

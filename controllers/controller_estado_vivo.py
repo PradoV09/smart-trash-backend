@@ -18,19 +18,20 @@ async def obtener_estado_vivo(
     db: AsyncSession = Depends(get_db),
     _: Usuario = AdminDep,
 ) -> SuccessResponse[EstadoVivoResponse]:
-    """Obtiene el estado en vivo de una asignación.
-    
-    Incluye:
-    - Estado actual del recorrido
-    - Ubicación actual (última posición GPS)
-    - Información de la tripulación
-    - Métricas del recorrido
-    """
-    service = EstadoVivoService(db)
-    
-    estado = await service.obtener_estado_vivo(id_asignacion)
-    
-    return success_response(
-        data=estado,
-        message="Estado vivo obtenido exitosamente."
-    )
+    """Obtiene el estado en vivo de una asignación."""
+    try:
+        service = EstadoVivoService(db)
+        estado = await service.obtener_estado_vivo(id_asignacion)
+        
+        return success_response(
+            data=estado,
+            message="Estado vivo obtenido exitosamente."
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al obtener estado vivo de asignación {id_asignacion}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al recuperar el estado en vivo."
+        )

@@ -1,4 +1,4 @@
-"""Helpers para construir respuestas exitosas con un formato uniforme."""
+"""Helpers para construir respuestas exitosas y de error con un formato uniforme."""
 
 from __future__ import annotations
 
@@ -11,4 +11,13 @@ def success_response(*, data: Any = None, message: str = "Operación completada 
         "success": True,
         "message": message,
         "data": data,
+    }
+
+
+def error_response(*, message: str = "Ha ocurrido un error.", detail: Any = None) -> dict[str, Any]:
+    """Devuelve una respuesta estándar de error para toda la API."""
+    return {
+        "success": False,
+        "message": message,
+        "detail": detail,
     }

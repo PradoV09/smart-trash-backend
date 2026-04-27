@@ -5,7 +5,7 @@ Definen el payload de entrada para registrar actividad y la estructura de salida
 
 from typing import Optional, List
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from datetime import datetime
 from fastapi import Form
 
@@ -45,8 +45,23 @@ class ReporteResponse(BaseModel):
     asunto:        str
     evidencia_url: str | None
     fecha:         datetime
+    
+    # Campos virtuales calculados
+    terminado: bool = False
+    notas_terminacion: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='after')
+    def compute_virtual_fields(self) -> 'ReporteResponse':
+        if self.descripcion and "[TERMINADO:" in self.descripcion:
+            self.terminado = True
+            if "]" in self.descripcion:
+                parts = self.descripcion.split("]", 1)
+                if len(parts) > 1:
+                    self.notas_terminacion = parts[1].strip()
+        return self
+
 
 # Schema para crear reportes como conductor con fotos y prioridad
 class ReporteDriverCreate(BaseModel):
@@ -98,3 +113,10 @@ class ReporteDriverResponse(BaseModel):
 # Schema para marcar reporte como terminado
 class ReporteTerminadoUpdate(BaseModel):
     notas_terminacion: str
+
+    @classmethod
+    def as_form(
+        cls,
+        notas_terminacion: str = Form(..., description="Notas finales del reporte"),
+    ):
+        return cls(notas_terminacion=notas_terminacion)
