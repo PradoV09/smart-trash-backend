@@ -36,11 +36,14 @@ class Settings(BaseSettings):
     # Opcional: backend JSON (vehículos, rutas /api/*). Si no va, ver resolve en config.py
     INTEGRACION_API_URL: str = ""
     
-    # Configuración de Correo
+    # Configuración de Correo (Legacy SMTP - deprecated)
     EMAIL_USER:          str = ""
     EMAIL_PASS:          str = ""
     SMTP_SERVER:         str = "smtp.gmail.com"
     SMTP_PORT:           int = 587
+    
+    # Configuración de Correo (Resend API)
+    RESEND_API_KEY:      str = ""
 
     @property
     def cors_list(self) -> List[str]:
