@@ -1,6 +1,6 @@
 """Controladores del módulo de autenticación."""
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db
 from core.response_builders import success_response
@@ -26,10 +26,10 @@ async def login(data: LoginRequest = Depends(LoginRequest.as_form), db: AsyncSes
             detail="Error interno durante el inicio de sesión."
         )
 
-async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)) -> SuccessResponse[None]:
+async def forgot_password(data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)) -> SuccessResponse[None]:
     """Inicia el flujo de recuperación de contraseña."""
     try:
-        await AuthService(db).forgot_password(data)
+        await AuthService(db).forgot_password(data, background_tasks)
         return success_response(data=None, message="Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.")
     except HTTPException:
         raise

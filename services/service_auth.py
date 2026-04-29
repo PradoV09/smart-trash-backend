@@ -69,7 +69,7 @@ class AuthService:
 
         return TokenResponse(access_token=token)
 
-    async def forgot_password(self, data: ForgotPasswordRequest) -> None:
+    async def forgot_password(self, data: ForgotPasswordRequest, background_tasks) -> None:
         """Procesa la solicitud de recuperación de contraseña.
         
         Siempre retorna exitosamente para evitar enumeración de usuarios.
@@ -99,8 +99,8 @@ class AuthService:
             self.db.add(reset_record)
             await self.db.commit()
             
-            # Enviar correo real de forma asíncrona para no bloquear
-            await enviar_correo_async(usuario.correo, raw_token)
+            # Enviar correo en background para no bloquear la respuesta
+            background_tasks.add_task(enviar_correo_async, usuario.correo, raw_token)
             
         # El endpoint siempre debe retornar lo mismo independientemente de si el usuario existe
 
