@@ -25,9 +25,10 @@ class Settings(BaseSettings):
     JWT_SECRET:          str
     JWT_ALGORITHM:       str = "HS256"
     JWT_EXPIRE_MINUTES:  int = 480
-    CORS_ORIGINS:        str = (
-        "http://localhost:4200,"
-        "https://smart-trash-routes-production.up.railway.app"
+    CORS_ORIGINS: str = (
+    "http://localhost:4200,"
+    "https://smart-trash-routes-production.up.railway.app,"
+    "http://localhost:8100"
     )
     RUTAS_API_URL:       str = "http://localhost:8001"  # URL de la API externa de rutas
     FRONTEND_URL:        str = "http://localhost:4200"  # URL del frontend para reset password
