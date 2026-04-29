@@ -100,18 +100,31 @@ Si no realizaste esta solicitud, puedes ignorar de forma segura este mensaje.
     mensaje.attach(parte_html)
 
     try:
-        with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
+        print("🔍 1. Conectando a SMTP...")
+        with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT, timeout=10) as server:
+            print("🔍 2. Conexión SMTP establecida")
+            
+            print("🔍 3. Iniciando TLS...")
             server.starttls()
+            print("🔍 4. TLS iniciado")
+            
+            print("🔍 5. Haciendo login...")
             server.login(settings.EMAIL_USER, settings.EMAIL_PASS)
+            print("🔍 6. Login exitoso")
+            
+            print("🔍 7. Enviando correo...")
             server.send_message(mensaje)
-            print("Correo enviado correctamente con formato HTML")
+            print("🔍 8. Correo enviado exitosamente")
     except Exception as e:
-        print("Error enviando correo:", e)
+        print(f"❌ Error enviando correo: {e}")
+        print(f"❌ Tipo de error: {type(e).__name__}")
+        raise
 
 import asyncio
 from functools import partial
 
 async def enviar_correo_async(destino: str, token: str):
     """Ejecuta el envío de correo en un thread separado para no bloquear el event loop."""
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, partial(enviar_correo, destino, token))
+    print(f"🚀 Iniciando envío de correo asíncrono a: {destino}")
+    await asyncio.to_thread(enviar_correo, destino, token)
+    print("✅ Envío de correo completado")
