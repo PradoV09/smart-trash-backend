@@ -180,6 +180,8 @@ app = FastAPI(
 # MIDDLEWARE - Configuración de CORS y otros middlewares
 # ============================================================================
 
+print("🔥 DEBUG - CORS ORIGINS:", settings.cors_list)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_list,
