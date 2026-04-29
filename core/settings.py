@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     JWT_SECRET:          str
     JWT_ALGORITHM:       str = "HS256"
     JWT_EXPIRE_MINUTES:  int = 480
-    CORS_ORIGINS:        str = "http://localhost:4200"
+    CORS_ORIGINS:        str = (
+        "http://localhost:4200,"
+        "https://smart-trash-routes-production.up.railway.app"
+    )
     RUTAS_API_URL:       str = "http://localhost:8001"  # URL de la API externa de rutas
     API:                 str = ""
     PERFIL_ID:           str = ""
@@ -40,7 +43,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_list(self) -> List[str]:
-        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
 
 settings = Settings()
