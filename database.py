@@ -4,7 +4,7 @@ Aquí se define:
 - el motor asíncrono de SQLAlchemy,
 - la factoría de sesiones `AsyncSession`,
 - la clase base para los modelos ORM,
-- la rutina de creación de tablas al arrancar la app.
+- la rutina de creación de tablas al arrancar la app. 
 """
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
