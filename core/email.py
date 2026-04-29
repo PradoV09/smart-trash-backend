@@ -4,7 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from core.settings import settings
 
 def enviar_correo(destino: str, token: str):
-    link = f"http://localhost:4200/reset-password?token={token}"
+    link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
 
     mensaje = MIMEMultipart("alternative")
     mensaje["Subject"] = "Recupera tu acceso - Smart Trash"

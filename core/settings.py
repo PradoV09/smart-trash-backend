@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "https://smart-trash-routes-production.up.railway.app"
     )
     RUTAS_API_URL:       str = "http://localhost:8001"  # URL de la API externa de rutas
+    FRONTEND_URL:        str = "http://localhost:4200"  # URL del frontend para reset password
     API:                 str = ""
     PERFIL_ID:           str = ""
     # Opcional: backend JSON (vehículos, rutas /api/*). Si no va, ver resolve en config.py
