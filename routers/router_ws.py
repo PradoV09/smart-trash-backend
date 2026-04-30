@@ -6,12 +6,12 @@ from core.security import verificar_token
 
 router = APIRouter(tags=["WebSockets"])
 
-@router.get("/ws/stats")
+@router.get("/stats")
 async def obtener_estadisticas_ws():
     """Obtiene estadísticas de conexiones WebSocket activas."""
     return ws_manager.obtener_estadisticas()
 
-@router.websocket("/ws/asignacion/{id_asignacion}")
+@router.websocket("/asignacion/{id_asignacion}")
 async def ws_asignacion(
     websocket: WebSocket,
     id_asignacion: int,
