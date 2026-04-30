@@ -90,6 +90,15 @@ class AsignacionService:
         result = await self.db.execute(self._con_relaciones())
         return result.scalars().all()
 
+    async def obtener_asignaciones_por_usuario(self, id_usuario: int) -> list[AsignacionRutas]:
+        result = await self.db.execute(
+            self._con_relaciones()
+            .join(AsignacionRutas.tripulacion)
+            .join(Tripulacion.miembros)
+            .where(TripulacionMiembro.id_usuario == id_usuario)
+        )
+        return result.scalars().all()
+
     async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
             self._con_relaciones().where(

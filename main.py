@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 # IMPORTS - Librerías de terceros
 # ============================================================================
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -270,6 +270,9 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación
 # ============================================================================
 
+@app.options("/{full_path:path}", include_in_schema=False)
+async def options_handler(request: Request):
+    return {}
 
 @app.get(
     "/",

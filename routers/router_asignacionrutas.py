@@ -18,6 +18,7 @@ router_admin.post("/{id_asignacion}/validar-piloto",          response_model=Suc
 # Driver
 router_driver = APIRouter(prefix="/driver/asignaciones", tags=["Driver: Asignaciones"])
 
+router_driver.get("",                           response_model=SuccessResponse[list[AsignacionResponse]])(controller_asignacionrutas.listar_asignaciones_driver)
 router_driver.get("/{id_asignacion}",           response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.ver_asignacion_driver)
 router_driver.post("/{id_asignacion}/iniciar",  response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.iniciar_recorrido)
 router_driver.post("/{id_asignacion}/finalizar", response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.finalizar_recorrido)

@@ -129,6 +129,20 @@ async def cancelar_asignacion(
 
 
 # --- Driver ---
+async def listar_asignaciones_driver(
+    db: AsyncSession = Depends(get_db),
+    usuario: Usuario = DriverDep,
+) -> SuccessResponse[list[AsignacionResponse]]:
+    """Obtiene la lista de asignaciones para el conductor autenticado."""
+    try:
+        asignaciones = await AsignacionService(db).obtener_asignaciones_por_usuario(usuario.id_usuario)
+        return success_response(data=asignaciones, message="Asignaciones del conductor obtenidas.")
+    except Exception as e:
+        logger.error(f"Error al listar asignaciones driver: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener la lista de asignaciones."
+        )
 async def ver_asignacion_driver(
     id_asignacion: int,
     db: AsyncSession = Depends(get_db),
