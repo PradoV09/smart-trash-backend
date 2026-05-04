@@ -29,9 +29,10 @@ class WebSocketManager:
         await websocket.accept()
         self.conexiones[id_asignacion].append(websocket)
         
-        # Iniciar tarea periódica si es la primera conexión para esta asignación
-        if id_asignacion not in self.tareas_periodicas:
-            await self._iniciar_actualizaciones_periodicas(id_asignacion)
+        # Tarea periódica desactivada para evitar ruido de posiciones null
+        # if id_asignacion not in self.tareas_periodicas:
+        #     await self._iniciar_actualizaciones_periodicas(id_asignacion)
+        pass
 
     def desconectar(self, websocket: WebSocket, id_asignacion: int):
         """Remueve una conexión cuando el cliente se desconecta."""

@@ -29,3 +29,16 @@ async def ws_asignacion(
             await websocket.receive_text()  # mantiene la conexión viva
     except WebSocketDisconnect:
         ws_manager.desconectar(websocket, id_asignacion)
+
+@router.websocket("/public/asignacion/{id_asignacion}")
+async def ws_asignacion_publica(
+    websocket: WebSocket,
+    id_asignacion: int,
+):
+    """WebSocket público para recibir actualizaciones de posición GPS sin requerir token."""
+    await ws_manager.conectar(websocket, id_asignacion)
+    try:
+        while True:
+            await websocket.receive_text()  # Mantiene la conexión viva
+    except WebSocketDisconnect:
+        ws_manager.desconectar(websocket, id_asignacion)

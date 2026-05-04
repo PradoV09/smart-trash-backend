@@ -27,6 +27,30 @@ async def crear_reporte_publico(
     - Otros incidentes
     """
     try:
+        # Procesar Base64 a archivo si es necesario
+        final_url = data.evidencia_url
+        if final_url and final_url.startswith("data:image"):
+            import base64
+            import os
+            import uuid
+            
+            try:
+                header, encoded = final_url.split(",", 1)
+                ext = header.split(";")[0].split("/")[1]
+                if ext == "jpeg": ext = "jpg"
+                
+                file_name = f"public_report_{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join("uploads", "fotos", file_name)
+                
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, "wb") as f:
+                    f.write(base64.b64decode(encoded))
+                    
+                final_url = f"/uploads/fotos/{file_name}"
+            except Exception as ex:
+                logger.error(f"Error procesando imagen base64: {ex}")
+                final_url = None
+
         # Convertir a ReporteCreate interno
         reporte_data = ReporteCreate(
             id_usuario=None,  # No está autenticado
@@ -34,7 +58,7 @@ async def crear_reporte_publico(
             u_rol_cache="ciudadano",  # Marcamos como reporte de ciudadano
             descripcion=f"[{data.nombre}] {data.descripcion}",  # Incluimos nombre en descripción
             asunto=data.asunto,
-            evidencia_url=data.evidencia_url,
+            evidencia_url=final_url,
         )
         
         reporte = await ReporteService(db).registrar_reporte(reporte_data)

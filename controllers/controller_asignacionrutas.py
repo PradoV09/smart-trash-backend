@@ -176,7 +176,10 @@ async def iniciar_recorrido(
 ) -> AsignacionResponse:
     """Inicia el recorrido integrando con la API externa."""
     try:
-        asignacion = await AsignacionService(db).iniciar_recorrido_con_api_externa(id_asignacion)
+        asignacion = await AsignacionService(db).iniciar_recorrido_con_api_externa(
+            id_asignacion=id_asignacion,
+            perfil_id="f105a9d3-13b3-4066-b5f7-edae6801e366"
+        )
         return success_response(data=asignacion, message="Recorrido iniciado exitosamente.")
     except HTTPException:
         raise
@@ -251,6 +254,21 @@ async def ver_horario_ruta(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al recuperar el horario de la ruta."
+        )
+
+
+async def listar_asignaciones_en_curso_publico(
+    db: AsyncSession = Depends(get_db),
+) -> SuccessResponse[list[AsignacionPublicResponse]]:
+    """Obtiene la lista de asignaciones activas (en curso) para visualización pública."""
+    try:
+        asignaciones = await AsignacionService(db).listar_asignaciones_en_curso_publico()
+        return success_response(data=asignaciones, message="Asignaciones activas obtenidas exitosamente.")
+    except Exception as e:
+        logger.error(f"Error al listar asignaciones activas públicas: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener las asignaciones activas."
         )
 
 

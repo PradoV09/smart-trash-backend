@@ -14,6 +14,12 @@ from schemas.schema_posiciones import (
     PosicionListResponse,
 )
 from core.websocket_manager import ws_manager
+import logging
+
+from models.model_asignacion_externa import AsignacionExterna
+from services.service_api_externa import APIExternaService
+
+logger = logging.getLogger(__name__)
 
 
 class PosicionesService:
@@ -78,10 +84,33 @@ class PosicionesService:
         await ws_manager.broadcast(id_asignacion, {
             "evento": "posicion_actualizada",
             "id_asignacion": id_asignacion,
-            "latitud": data.latitud,
-            "longitud": data.longitud,
+            "latitud": float(data.latitud),
+            "longitud": float(data.longitud),
             "timestamp": data.timestamp.isoformat(),
+            "data": { # Respaldo para compatibilidad
+                "lat": float(data.latitud),
+                "lon": float(data.longitud)
+            }
         })
+        
+        # Enviar posición a la API externa
+        try:
+            result_ext = await self.db.execute(
+                select(AsignacionExterna).where(AsignacionExterna.id_asignacion == id_asignacion)
+            )
+            asignacion_externa = result_ext.scalar_one_or_none()
+            
+            if asignacion_externa and asignacion_externa.recorrido_externo_id:
+                api_service = APIExternaService()
+                await api_service.registrar_posicion_externa(
+                    recorrido_externo_id=asignacion_externa.recorrido_externo_id,
+                    latitud=float(data.latitud),
+                    longitud=float(data.longitud),
+                    perfil_id="f105a9d3-13b3-4066-b5f7-edae6801e366"
+                )
+        except Exception as e:
+            logger.error(f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}")
+            # No lanzamos excepción para no romper el flujo principal si la API externa falla
         
         return PosicionResponse.model_validate(posicion)
 
