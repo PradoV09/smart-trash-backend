@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from models.model_asignacionrutas import EstadoAsignacion
 from schemas.schema_vehiculo import VehiculoResponse
+from schemas.schema_rutas_externas import RutaResponse
 from schemas.schema_tripulacion import TripulacionResponse
 from fastapi import Form
 
@@ -70,5 +71,7 @@ class AsignacionPublicResponse(BaseModel):
     id_vehiculo: int
     hora_salida: datetime | None
     estado:      EstadoAsignacion
+    vehiculo:    Optional[VehiculoResponse] = None
+    ruta:        Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
