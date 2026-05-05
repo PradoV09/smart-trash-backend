@@ -203,30 +203,30 @@ register_exception_handlers(app)
 # ============================================================================
 
 # 🔐 Autenticación y autorización
-app.include_router(auth_router)
+app.include_router(auth_router, prefix="/api")
 
 # 👥 Gestión de usuarios
-app.include_router(usuario_router)
+app.include_router(usuario_router, prefix="/api")
 
 # 🏷️ Catálogo de roles
-app.include_router(roles_router)
+app.include_router(roles_router, prefix="/api")
 
 # 🚛 Gestión de vehículos
-app.include_router(vehiculo_router)
+app.include_router(vehiculo_router, prefix="/api")
 
 # 📊 Reportes y estadísticas (Admin - gestión)
-app.include_router(reporte_router)
+app.include_router(reporte_router, prefix="/api")
 
 # 📊 Reportes de conductores (Driver - creación y gestión)
 from routers.router_driver_reportes import router as driver_reporte_router
-app.include_router(driver_reporte_router)
+app.include_router(driver_reporte_router, prefix="/api")
 
 # 📢 Reportes públicos (Ciudadanos - sin autenticación)
-app.include_router(reporte_publico_router)
+app.include_router(reporte_publico_router, prefix="/api")
 
 # 🗺️ Integración con API externa (rutas y recorridos)
-app.include_router(rutas_externas_router)
-app.include_router(recorridos_externos_router)
+app.include_router(rutas_externas_router, prefix="/api")
+app.include_router(recorridos_externos_router, prefix="/api")
 
 # 📡 WebSockets y tiempo real
 app.include_router(
@@ -236,30 +236,30 @@ app.include_router(
 )
 
 # 📋 Asignaciones de vehículos (diferentes roles)
-app.include_router(asignacion_admin_router)
-app.include_router(asignacion_driver_router)
+app.include_router(asignacion_admin_router, prefix="/api")
+app.include_router(asignacion_driver_router, prefix="/api")
 
 # 📢 Rutas Públicas (Ciudadanos - sin autenticación)
-app.include_router(rutas_publicas_router)
+app.include_router(rutas_publicas_router, prefix="/api")
 
 # 👥 Tripulaciones (Gestión de equipos independientes)
-app.include_router(tripulacion_router)
+app.include_router(tripulacion_router, prefix="/api")
 
 # 📍 Posiciones GPS del recorrido (Driver + Admin)
 from routers.router_posiciones import router_driver as posiciones_driver_router
 from routers.router_posiciones import router_admin as posiciones_admin_router
-app.include_router(posiciones_driver_router)
-app.include_router(posiciones_admin_router)
+app.include_router(posiciones_driver_router, prefix="/api")
+app.include_router(posiciones_admin_router, prefix="/api")
 
 # 📷 Fotos/Evidencia del recorrido (Driver + Admin)
 from routers.router_fotos import router_driver as fotos_driver_router
 from routers.router_fotos import router_admin as fotos_admin_router
-app.include_router(fotos_driver_router)
-app.include_router(fotos_admin_router)
+app.include_router(fotos_driver_router, prefix="/api")
+app.include_router(fotos_admin_router, prefix="/api")
 
 # 📊 Estado en vivo (Admin only)
 from routers.router_estado_vivo import router as estado_vivo_router
-app.include_router(estado_vivo_router)
+app.include_router(estado_vivo_router, prefix="/api")
 
 # 📂 Archivos estáticos (Fotos y evidencia)
 upload_dir = "uploads"
