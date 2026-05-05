@@ -102,29 +102,21 @@ class AsignacionService:
         return await self._enriquecer_con_rutas(asignaciones)
 
     async def listar_asignaciones_en_curso_publico(self) -> list[AsignacionRutas]:
-        """Obtiene todas las asignaciones actualmente en curso."""
-        from sqlalchemy import cast, String, func
+        """Obtiene todas las asignaciones actualmente en curso con sus detalles."""
+        from sqlalchemy import cast, String
         
-        # 1. Log de depuración profunda (para ver qué llega de la base de datos)
-        try:
-            all_res = await self.db.execute(select(AsignacionRutas))
-            all_asig = all_res.scalars().all()
-            print(f"DEBUG DB: Total asignaciones en tabla: {len(all_asig)}")
-            for a in all_asig:
-                print(f"DEBUG DB: ID {a.id_asignacion} | Estado: '{a.estado}' | Type: {type(a.estado)}")
-        except Exception as e:
-            print(f"DEBUG DB: Error listando: {e}")
-
-        # 2. Consulta ultra-robusta usando CAST a String e ILIKE
+        # Consulta robusta con relaciones precargadas
         result = await self.db.execute(
-            select(AsignacionRutas).where(
+            select(AsignacionRutas)
+            .options(selectinload(AsignacionRutas.vehiculo))
+            .where(
                 cast(AsignacionRutas.estado, String).ilike('en_curso')
             )
         )
         asignaciones = result.scalars().all()
-        print(f"DEBUG: Encontradas {len(asignaciones)} asignaciones con ILIKE")
         
-        return asignaciones
+        # Enriquecer con datos de la ruta externa (shapes, nombres, etc)
+        return await self._enriquecer_con_rutas(list(asignaciones))
 
     async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
