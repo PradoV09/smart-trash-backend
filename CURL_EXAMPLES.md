@@ -472,3 +472,11 @@ Ejecutar: `node test-websocket.js`
 ---
 
 **Nota:** Reemplaza los valores de ejemplo (IDs, tokens, etc.) con datos válidos de tu base de datos antes de ejecutar las pruebas.
+
+Todo lo que tiene que ver con la rutas publicas se puede acceder sin token
+
+
+/publico/rutas/activas 
+
+/publico/rutas/horario   
+
