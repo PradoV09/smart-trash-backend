@@ -11,7 +11,7 @@ from schemas.schema_recorridos_externos import (
 from schemas.schema_responses import SuccessResponse
 
 
-router = APIRouter(prefix="/api/recorridos", tags=["Integración: Recorridos Externos"])
+router = APIRouter(prefix="/recorridos", tags=["Integración: Recorridos Externos"])
 
 router.post(
     "/iniciar",

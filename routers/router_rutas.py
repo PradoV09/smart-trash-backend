@@ -10,8 +10,8 @@ from schemas.schema_rutas_externas import RutasCreateRequest, RutasCreateRespons
 from schemas.schema_asignacionrutas import AsignacionPublicResponse
 
 
-router = APIRouter(prefix="/api/rutas", tags=["Integración: Rutas Externas"])
-router_public = APIRouter(prefix="/api/publico/rutas", tags=["Público: Rutas"])
+router = APIRouter(prefix="/rutas", tags=["Integración: Rutas Externas"])
+router_public = APIRouter(prefix="/publico/rutas", tags=["Público: Rutas"])
 
 # --- Public Routes ---
 @router_public.get("/activas", response_model=SuccessResponse[list[AsignacionPublicResponse]])
