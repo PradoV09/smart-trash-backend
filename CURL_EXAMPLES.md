@@ -478,5 +478,7 @@ Todo lo que tiene que ver con la rutas publicas se puede acceder sin token
 
 /publico/rutas/activas 
 
-/publico/rutas/horario   
+/publico/rutas/horario
+
+estos endpoints seran el cerebro del ciudadano
 
