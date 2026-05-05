@@ -15,6 +15,7 @@ La lógica de operación de rutas vive en los services.
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, AdminDep, DriverDep, RecolectorDep, UserDep
+from core.settings import settings
 from core.response_builders import success_response
 from schemas.schema_responses import SuccessResponse
 from schemas.schema_asignacionrutas import (
@@ -178,7 +179,7 @@ async def iniciar_recorrido(
     try:
         asignacion = await AsignacionService(db).iniciar_recorrido_con_api_externa(
             id_asignacion=id_asignacion,
-            perfil_id="f105a9d3-13b3-4066-b5f7-edae6801e366"
+            perfil_id=settings.PERFIL_ID
         )
         return success_response(data=asignacion, message="Recorrido iniciado exitosamente.")
     except HTTPException:

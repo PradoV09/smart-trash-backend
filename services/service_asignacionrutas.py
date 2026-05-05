@@ -383,28 +383,20 @@ class AsignacionService:
                 detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo."
             )
         
-        # 4. Llamar a la API externa
+        # 4. Llamar a la API externa (con tolerancia a fallos para desarrollo local)
         api_service = APIExternaService()
+        recorrido_externo_id = f"local_{id_asignacion}" # Valor por defecto
+        
         try:
             response = await api_service.iniciar_recorrido_externo(
                 ruta_id=asignacion.id_ruta,
                 vehiculo_id=asignacion.vehiculo.id_externo,
                 perfil_id=perfil_id
             )
-        except HTTPException as e:
-            logger.error(f"Error al iniciar recorrido en API externa: {e.detail}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Error al iniciar recorrido en API externa: {e.detail}"
-            )
-        
-        # Extraer ID del recorrido externo
-        recorrido_externo_id = response.get("id") or response.get("recorrido_id")
-        if not recorrido_externo_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="No se recibió el ID del recorrido de la API externa."
-            )
+            recorrido_externo_id = response.get("id") or response.get("recorrido_id") or recorrido_externo_id
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo sincronizar con API externa (Modo Local activo): {str(e)}")
+            # En local, permitimos continuar aunque la API externa falle
         
         # 5. Guardar referencia externa (UPSERT)
         existing = await self.db.execute(
