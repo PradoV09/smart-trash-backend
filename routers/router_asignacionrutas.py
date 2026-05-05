@@ -1,6 +1,8 @@
 # routers/router_asignacionrutas.py
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.dependecies import get_db
 from schemas.schema_asignacionrutas import AsignacionCreate, AsignacionResponse, AsignacionPublicResponse
 from schemas.schema_responses import SuccessResponse
 from controllers import controller_asignacionrutas
@@ -23,7 +25,5 @@ router_driver.get("/{id_asignacion}",           response_model=SuccessResponse[A
 router_driver.post("/{id_asignacion}/iniciar",  response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.iniciar_recorrido)
 router_driver.post("/{id_asignacion}/finalizar", response_model=SuccessResponse[AsignacionResponse])(controller_asignacionrutas.finalizar_recorrido)
 
-# User ciudadano
-router_user = APIRouter(prefix="/rutas", tags=["Público: Rutas"])
-
-router_user.get("/{id_ruta}/horario", response_model=SuccessResponse[AsignacionPublicResponse])(controller_asignacionrutas.ver_horario_ruta)
+# User ciudadano (Público) - MOVED TO router_rutas.py
+# (The public routes were moved to consolidate route-related endpoints)

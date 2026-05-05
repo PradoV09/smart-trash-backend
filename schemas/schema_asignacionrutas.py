@@ -59,11 +59,13 @@ class AsignacionResponse(BaseModel):
     created_at:    datetime
     vehiculo:      VehiculoResponse
     tripulacion:   Optional[TripulacionResponse] = None
+    ruta:          Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 # Solo para la app del ciudadano
 class AsignacionPublicResponse(BaseModel):
+    id_asignacion: int
     id_ruta:     str
     id_vehiculo: int
     hora_salida: datetime | None

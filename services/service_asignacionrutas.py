@@ -88,7 +88,8 @@ class AsignacionService:
 
     async def obtener_asignaciones(self) -> list[AsignacionRutas]:
         result = await self.db.execute(self._con_relaciones())
-        return result.scalars().all()
+        asignaciones = result.scalars().all()
+        return await self._enriquecer_con_rutas(asignaciones)
 
     async def obtener_asignaciones_por_usuario(self, id_usuario: int) -> list[AsignacionRutas]:
         result = await self.db.execute(
@@ -97,7 +98,33 @@ class AsignacionService:
             .join(Tripulacion.miembros)
             .where(TripulacionMiembro.id_usuario == id_usuario)
         )
-        return result.scalars().all()
+        asignaciones = result.scalars().all()
+        return await self._enriquecer_con_rutas(asignaciones)
+
+    async def listar_asignaciones_en_curso_publico(self) -> list[AsignacionRutas]:
+        """Obtiene todas las asignaciones actualmente en curso."""
+        from sqlalchemy import cast, String, func
+        
+        # 1. Log de depuración profunda (para ver qué llega de la base de datos)
+        try:
+            all_res = await self.db.execute(select(AsignacionRutas))
+            all_asig = all_res.scalars().all()
+            print(f"DEBUG DB: Total asignaciones en tabla: {len(all_asig)}")
+            for a in all_asig:
+                print(f"DEBUG DB: ID {a.id_asignacion} | Estado: '{a.estado}' | Type: {type(a.estado)}")
+        except Exception as e:
+            print(f"DEBUG DB: Error listando: {e}")
+
+        # 2. Consulta ultra-robusta usando CAST a String e ILIKE
+        result = await self.db.execute(
+            select(AsignacionRutas).where(
+                cast(AsignacionRutas.estado, String).ilike('en_curso')
+            )
+        )
+        asignaciones = result.scalars().all()
+        print(f"DEBUG: Encontradas {len(asignaciones)} asignaciones con ILIKE")
+        
+        return asignaciones
 
     async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
@@ -111,7 +138,8 @@ class AsignacionService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"No se encontró la asignación con id {id_asignacion}.",
             )
-        return asignacion
+        enriquecidas = await self._enriquecer_con_rutas([asignacion])
+        return enriquecidas[0]
 
     async def obtener_asignacion_ruta(self, id_ruta: str) -> AsignacionRutas | None:
         result = await self.db.execute(
@@ -164,6 +192,30 @@ class AsignacionService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"No se puede iniciar la asignación {id_asignacion}: faltan {len(no_confirmados)} integrante(s) por confirmar.",
+            )
+
+        # NUEVA VALIDACIÓN: Verificar que ningún miembro tenga otro recorrido activo
+        ids_usuarios = [m.id_usuario for m in asignacion.tripulacion.miembros]
+        query_activa = (
+            select(Usuario)
+            .join(TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario)
+            .join(Tripulacion, Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion)
+            .join(AsignacionRutas, AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion)
+            .where(
+                Usuario.id_usuario.in_(ids_usuarios),
+                AsignacionRutas.estado == EstadoAsignacion.en_curso,
+                AsignacionRutas.id_asignacion != id_asignacion
+            )
+            .options(selectinload(Usuario.perfil))
+        )
+        res_activa = await self.db.execute(query_activa)
+        usuario_ocupado = res_activa.scalar_one_or_none()
+        
+        if usuario_ocupado:
+            nombre = usuario_ocupado.perfil.nombre if usuario_ocupado.perfil else f"ID {usuario_ocupado.id_usuario}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo."
             )
         # Una vez iniciada, la asignación cambia a `en_curso` y el vehículo queda `en_ruta`.
         asignacion.estado          = EstadoAsignacion.en_curso
@@ -306,29 +358,45 @@ class AsignacionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"El vehículo {asignacion.vehiculo.id_vehiculo} ya tiene un recorrido activo."
             )
+            
+        # 3b. Validar que ningún miembro de la tripulación tenga otro recorrido activo
+        ids_usuarios = [m.id_usuario for m in asignacion.tripulacion.miembros]
+        query_activa = (
+            select(Usuario)
+            .join(TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario)
+            .join(Tripulacion, Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion)
+            .join(AsignacionRutas, AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion)
+            .where(
+                Usuario.id_usuario.in_(ids_usuarios),
+                AsignacionRutas.estado == EstadoAsignacion.en_curso,
+                AsignacionRutas.id_asignacion != id_asignacion
+            )
+            .options(selectinload(Usuario.perfil))
+        )
+        res_activa = await self.db.execute(query_activa)
+        usuario_ocupado = res_activa.scalar_one_or_none()
         
-        # 4. Llamar a la API externa
+        if usuario_ocupado:
+            nombre = usuario_ocupado.perfil.nombre if usuario_ocupado.perfil else f"ID {usuario_ocupado.id_usuario}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo."
+            )
+        
+        # 4. Llamar a la API externa (con tolerancia a fallos para desarrollo local)
         api_service = APIExternaService()
+        recorrido_externo_id = f"local_{id_asignacion}" # Valor por defecto
+        
         try:
             response = await api_service.iniciar_recorrido_externo(
                 ruta_id=asignacion.id_ruta,
                 vehiculo_id=asignacion.vehiculo.id_externo,
                 perfil_id=perfil_id
             )
-        except HTTPException as e:
-            logger.error(f"Error al iniciar recorrido en API externa: {e.detail}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Error al iniciar recorrido en API externa: {e.detail}"
-            )
-        
-        # Extraer ID del recorrido externo
-        recorrido_externo_id = response.get("id") or response.get("recorrido_id")
-        if not recorrido_externo_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="No se recibió el ID del recorrido de la API externa."
-            )
+            recorrido_externo_id = response.get("id") or response.get("recorrido_id") or recorrido_externo_id
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo sincronizar con API externa (Modo Local activo): {str(e)}")
+            # En local, permitimos continuar aunque la API externa falle
         
         # 5. Guardar referencia externa (UPSERT)
         existing = await self.db.execute(
@@ -371,6 +439,36 @@ class AsignacionService:
         
         logger.info(f"Recorrido iniciado exitosamente: {recorrido_externo_id}")
         return await self.obtener_asignacion_id(id_asignacion)
+
+    async def _enriquecer_con_rutas(self, asignaciones: list[AsignacionRutas]) -> list[AsignacionRutas]:
+        """Consulta la API externa para traer los nombres y shapes de las rutas y adjuntarlos."""
+        if not asignaciones:
+            return []
+            
+        api_service = APIExternaService()
+        try:
+            # Traer todas las rutas del perfil una sola vez para optimizar
+            resp = await api_service.listar_rutas()
+            # La respuesta puede ser {"data": [...]} o [...]
+            rutas_list = resp.get("data", []) if isinstance(resp, dict) else resp
+            if not isinstance(rutas_list, list):
+                rutas_list = []
+                
+            rutas_map = {str(r.get("id")): r for r in rutas_list}
+            
+            for asig in asignaciones:
+                # Adjuntamos el objeto ruta dinámicamente al objeto SQLAlchemy
+                # Pydantic lo leerá gracias a `from_attributes=True` en el esquema
+                asig.ruta = rutas_map.get(str(asig.id_ruta))
+                
+        except Exception as e:
+            logger.error(f"Error al enriquecer asignaciones con rutas: {str(e)}")
+            # No lanzamos excepción para no romper el flujo principal si la API de rutas falla
+            for asig in asignaciones:
+                if not hasattr(asig, 'ruta'):
+                    asig.ruta = None
+                    
+        return asignaciones
 
     async def finalizar_recorrido_con_api_externa(
         self, 

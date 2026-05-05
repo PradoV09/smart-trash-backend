@@ -48,14 +48,16 @@ from routers.router_vehiculo import router as vehiculo_router
 from routers.router_reportes import router as reporte_router
 from routers.router_reportes_publico import router as reporte_publico_router
 from routers.router_roles import router as roles_router
-from routers.router_rutas import router as rutas_externas_router
-from routers.router_recorridos import router as recorridos_externos_router
-from routers.router_ws import router as ws_router
 from routers.router_asignacionrutas import (
     router_admin as asignacion_admin_router,
     router_driver as asignacion_driver_router,
-    router_user as asignacion_user_router,
 )
+from routers.router_rutas import (
+    router as rutas_externas_router,
+    router_public as rutas_publicas_router,
+)
+from routers.router_recorridos import router as recorridos_externos_router
+from routers.router_ws import router as ws_router
 from routers.router_tripulacion import router as tripulacion_router
 from scripts.seed_admin import seed_admin
 
@@ -236,7 +238,9 @@ app.include_router(
 # 📋 Asignaciones de vehículos (diferentes roles)
 app.include_router(asignacion_admin_router)
 app.include_router(asignacion_driver_router)
-app.include_router(asignacion_user_router)
+
+# 📢 Rutas Públicas (Ciudadanos - sin autenticación)
+app.include_router(rutas_publicas_router)
 
 # 👥 Tripulaciones (Gestión de equipos independientes)
 app.include_router(tripulacion_router)

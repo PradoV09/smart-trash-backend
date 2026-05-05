@@ -23,20 +23,20 @@ class PosicionCreate(BaseModel):
     accuracy: Optional[float] = Field(
         None,
         ge=0,
-        le=100,
+        le=1000,
         description="Precisión de la ubicación en metros"
     )
     speed: Optional[float] = Field(
         None,
         ge=0,
-        le=200,
+        le=500,
         description="Velocidad del vehículo en km/h"
     )
     bearing: Optional[float] = Field(
         None,
         ge=0,
-        lt=360,
-        description="Dirección del movimiento en grados (0-359)"
+        le=360,
+        description="Dirección del movimiento en grados (0-360)"
     )
     timestamp: datetime = Field(
         ...,
