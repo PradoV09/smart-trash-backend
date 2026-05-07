@@ -41,7 +41,7 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 ### ✅ **Funcionalidades Implementadas:**
 
 - **Autenticación JWT** con roles (admin, driver, recolector)
-- **WebSockets operativos** para comunicación en tiempo real
+- **WebSockets operativos** para comunicación en tiempo real con ping/pong keepalive
 - **CRUD completo** de usuarios (solo admin), vehículos, asignaciones
 - **Reportes Públicos** - Ciudadanos pueden reportar problemas sin registro
 - **Base de datos PostgreSQL** con migraciones Alembic
@@ -78,6 +78,113 @@ Este servidor implementado en **FastAPI** tiene como propósito:
 ## 📚 Documentación de la API
 
 Además de la documentación automática de FastAPI, este repositorio incluye una guía técnica detallada:
+
+### 📡 WebSockets en Tiempo Real
+
+El backend implementa WebSockets para comunicación en tiempo real con las siguientes características:
+
+#### Endpoints WebSocket
+
+**WebSocket Privado (con autenticación):**
+```
+ws://localhost:8000/ws/asignacion/{id_asignacion}?token={jwt_token}
+```
+
+**WebSocket Público (sin autenticación):**
+```
+ws://localhost:8000/ws/public/asignacion/{id_asignacion}
+```
+
+#### Características Implementadas
+
+- ✅ **Ping/Pong Keepalive**: El servidor envía pings cada 30 segundos para mantener la conexión activa
+- ✅ **Autenticación JWT**: Validación de token y permisos de usuario
+- ✅ **Control de Permisos**: Solo usuarios autorizados pueden conectarse a asignaciones específicas
+- ✅ **Manejo de Errores**: Logging detallado para depuración
+- ✅ **Reconexión Automática**: Soporte para reconexión del cliente
+- ✅ **Mensajes Estructurados**: Formato JSON para todos los mensajes
+
+#### Formato de Mensajes
+
+**Ping del servidor:**
+```json
+{
+  "type": "ping",
+  "timestamp": 1625097600.123,
+  "asignacion_id": 3
+}
+```
+
+**Pong del cliente:**
+```json
+{
+  "type": "pong",
+  "timestamp": 1625097600.456,
+  "ping_timestamp": 1625097600.123
+}
+```
+
+**Actualización de estado:**
+```json
+{
+  "type": "status_update",
+  "id": "msg_123",
+  "estado": "en_progreso",
+  "estado_anterior": "pendiente"
+}
+```
+
+**Confirmación (ACK):**
+```json
+{
+  "type": "ack",
+  "message_id": "msg_123",
+  "status": "received",
+  "asignacion_id": 3
+}
+```
+
+#### Permisos de Acceso
+
+Los usuarios pueden conectarse a una asignación si:
+
+1. **Administradores**: Tienen acceso a todas las asignaciones
+2. **Conductores**: Si están asignados como conductor del vehículo
+3. **Tripulación**: Si son miembros de la tripulación asignada
+4. **Otros**: No tienen acceso (HTTP 403)
+
+#### Pruebas Locales
+
+Para probar los WebSockets localmente:
+
+```bash
+# Ejecutar pruebas completas
+python test_websocket_comprehensive.py
+
+# Depurar conexión específica
+python debug_websocket.py
+```
+
+#### Configuración para Producción (Railway.app)
+
+El deployment está configurado con:
+
+- **Procfile**: `uvicorn main:app --host 0.0.0.0 --port $PORT --ws websockets --ws-ping-interval 30 --ws-ping-timeout 60`
+- **railway.json**: Configuración optimizada para WebSockets
+- **Health Check**: `/health` para monitoreo
+- **Timeouts**: Configurados para conexiones largas
+
+#### Logs de Depuración
+
+Los WebSockets incluyen logging detallado:
+
+```
+[ASIGNACION 3] Intento de conexión WebSocket
+[ASIGNACION 3] Token válido para usuario admin (ID: 1)
+[ASIGNACION 3] Conexión aceptada para usuario admin
+[ASIGNACION 3] Ping enviado
+[ASIGNACION 3] Pong recibido
+```
 
 - **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
 - **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)

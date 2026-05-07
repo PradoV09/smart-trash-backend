@@ -544,6 +544,55 @@ class AsignacionService:
         # 4. Cambiar estado a completada
         return await self._finalizar_recorrido_local(asignacion)
 
+    async def verificar_permiso_usuario(self, user_id: str, id_asignacion: int) -> bool:
+        """Verifica si un usuario tiene permiso para acceder a una asignación específica."""
+        try:
+            # Buscar la asignación con sus relaciones
+            result = await self.db.execute(
+                self._con_relaciones().where(AsignacionRutas.id_asignacion == id_asignacion)
+            )
+            asignacion = result.scalar_one_or_none()
+            
+            if not asignacion:
+                logger.warning(f"[PERMISO] Asignación {id_asignacion} no encontrada")
+                return False
+            
+            # Convertir user_id a entero si viene como string
+            try:
+                user_id_int = int(user_id)
+            except (ValueError, TypeError):
+                logger.warning(f"[PERMISO] user_id inválido: {user_id}")
+                return False
+            
+            # Verificar si el usuario es administrador (rol 1)
+            result_user = await self.db.execute(
+                select(Usuario).where(Usuario.id_usuario == user_id_int)
+            )
+            usuario = result_user.scalar_one_or_none()
+            
+            if usuario and usuario.id_rol == 1:  # Admin
+                logger.info(f"[PERMISO] Usuario {user_id} es administrador, acceso permitido")
+                return True
+            
+            # Verificar si el usuario está en la tripulación de la asignación
+            if asignacion.tripulacion:
+                for miembro in asignacion.tripulacion.miembros:
+                    if miembro.id_usuario == user_id_int:
+                        logger.info(f"[PERMISO] Usuario {user_id} encontrado en tripulación de asignación {id_asignacion}")
+                        return True
+            
+            # Verificar si el usuario es el conductor del vehículo asignado
+            if asignacion.vehiculo and asignacion.vehiculo.id_conductor == user_id_int:
+                logger.info(f"[PERMISO] Usuario {user_id} es conductor del vehículo de asignación {id_asignacion}")
+                return True
+            
+            logger.warning(f"[PERMISO] Usuario {user_id} no tiene permiso para asignación {id_asignacion}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"[PERMISO] Error verificando permisos para usuario {user_id}, asignación {id_asignacion}: {e}")
+            return False
+
     async def _finalizar_recorrido_local(self, asignacion: AsignacionRutas) -> AsignacionRutas:
         """Finaliza el recorrido a nivel local (sin API externa)."""
         id_asignacion = asignacion.id_asignacion
