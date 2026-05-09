@@ -263,7 +263,7 @@ app.include_router(
     fotos_public_router, prefix="/api"
 )  # GET /api/uploads/fotos/{filename}
 app.include_router(
-    fotos_legacy_router
+    fotos_legacy_router, prefix="/api"
 )  # GET /api/api/uploads/fotos/{filename} (backward compatibility)
 
 # 📊 Estado en vivo (Admin only)
@@ -283,11 +283,6 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ============================================================================
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación
 # ============================================================================
-
-
-@app.options("/{full_path:path}", include_in_schema=False)
-async def options_handler(request: Request):
-    return {}
 
 
 @app.get(
