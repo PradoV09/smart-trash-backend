@@ -255,12 +255,16 @@ app.include_router(posiciones_admin_router, prefix="/api")
 from routers.router_fotos import router_driver as fotos_driver_router
 from routers.router_fotos import router_admin as fotos_admin_router
 from routers.router_fotos import router_public as fotos_public_router
+from routers.router_fotos import router_legacy as fotos_legacy_router
 
 app.include_router(fotos_driver_router, prefix="/api")
 app.include_router(fotos_admin_router, prefix="/api")
 app.include_router(
-    fotos_public_router
-)  # Sin prefijo /api - el router ya tiene /uploads/fotos
+    fotos_public_router, prefix="/api"
+)  # GET /api/uploads/fotos/{filename}
+app.include_router(
+    fotos_legacy_router
+)  # GET /api/api/uploads/fotos/{filename} (backward compatibility)
 
 # 📊 Estado en vivo (Admin only)
 from routers.router_estado_vivo import router as estado_vivo_router

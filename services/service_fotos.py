@@ -132,8 +132,8 @@ class FotosService:
         with open(ruta_archivo, "wb") as f:
             f.write(datos_imagen)
 
-        # Retornar URL (sin prefijo /api para evitar duplicación)
-        return f"/uploads/fotos/{nombre_archivo}"
+        # Retornar URL completa (será montado bajo /api en main.py)
+        return f"/api/uploads/fotos/{nombre_archivo}"
 
     async def registrar_foto(
         self,

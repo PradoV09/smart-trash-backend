@@ -54,3 +54,25 @@ router_public.get(
     summary="Obtener archivo de foto",
     description="Sirve un archivo de foto almacenado en el servidor. Accesible sin autenticación.",
 )(controller_fotos.obtener_foto_archivo)
+
+
+# Router para manejar URLs antiguas con doble /api (backward compatibility)
+router_legacy = APIRouter(
+    prefix="/api/uploads/fotos", tags=["Archivos: Fotos (Legacy)"]
+)
+
+router_legacy.get(
+    "/{filename}",
+    responses={
+        200: {
+            "content": {
+                "image/jpeg": {},
+                "image/png": {},
+                "image/gif": {},
+                "image/webp": {},
+            }
+        }
+    },
+    summary="Obtener archivo de foto (Legacy)",
+    description="Endpoint legacy para URLs antiguas con /api duplicado. Accesible sin autenticación.",
+)(controller_fotos.obtener_foto_archivo)
