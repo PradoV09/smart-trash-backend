@@ -69,6 +69,7 @@ from scripts.seed_admin import seed_admin
 async def inicializar_base_datos():
     """Crea las tablas de la base de datos si no existen."""
     from database import crear_tablas
+
     await crear_tablas()
 
 
@@ -85,6 +86,7 @@ async def verificar_conexion_db():
     """Verifica la conexión a la base de datos."""
     try:
         from sqlalchemy.ext.asyncio import create_async_engine
+
         engine = create_async_engine(settings.DATABASE_URL, echo=False)
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))  # ✅ Fix: usar text()
@@ -219,6 +221,7 @@ app.include_router(reporte_router, prefix="/api")
 
 # 📊 Reportes de conductores (Driver - creación y gestión)
 from routers.router_driver_reportes import router as driver_reporte_router
+
 app.include_router(driver_reporte_router, prefix="/api")
 
 # 📢 Reportes públicos (Ciudadanos - sin autenticación)
@@ -229,11 +232,7 @@ app.include_router(rutas_externas_router, prefix="/api")
 app.include_router(recorridos_externos_router, prefix="/api")
 
 # 📡 WebSockets y tiempo real
-app.include_router(
-    ws_router,
-    prefix="/ws",
-    tags=["WebSockets"]
-)
+app.include_router(ws_router, prefix="/ws", tags=["WebSockets"])
 
 # 📋 Asignaciones de vehículos (diferentes roles)
 app.include_router(asignacion_admin_router, prefix="/api")
@@ -248,17 +247,24 @@ app.include_router(tripulacion_router, prefix="/api")
 # 📍 Posiciones GPS del recorrido (Driver + Admin)
 from routers.router_posiciones import router_driver as posiciones_driver_router
 from routers.router_posiciones import router_admin as posiciones_admin_router
+
 app.include_router(posiciones_driver_router, prefix="/api")
 app.include_router(posiciones_admin_router, prefix="/api")
 
 # 📷 Fotos/Evidencia del recorrido (Driver + Admin)
 from routers.router_fotos import router_driver as fotos_driver_router
 from routers.router_fotos import router_admin as fotos_admin_router
+from routers.router_fotos import router_public as fotos_public_router
+
 app.include_router(fotos_driver_router, prefix="/api")
 app.include_router(fotos_admin_router, prefix="/api")
+app.include_router(
+    fotos_public_router, prefix="/api"
+)  # Registra GET /api/uploads/fotos/{filename}
 
 # 📊 Estado en vivo (Admin only)
 from routers.router_estado_vivo import router as estado_vivo_router
+
 app.include_router(estado_vivo_router, prefix="/api")
 
 # 📂 Archivos estáticos (Fotos y evidencia)
@@ -274,14 +280,16 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ENDPOINTS PRINCIPALES - Endpoints de aplicación
 # ============================================================================
 
+
 @app.options("/{full_path:path}", include_in_schema=False)
 async def options_handler(request: Request):
     return {}
 
+
 @app.get(
     "/",
     summary="Información de la API",
-    description="Retorna información básica sobre la API y su estado."
+    description="Retorna información básica sobre la API y su estado.",
 )
 def read_root():
     """
@@ -298,7 +306,7 @@ def read_root():
             "version": "1.0.0",
             "status": "operational",
             "docs": "/docs",
-            "redoc": "/redoc"
+            "redoc": "/redoc",
         },
         message="Bienvenido a la API Smart Trash Route!",
     )
@@ -307,7 +315,7 @@ def read_root():
 @app.get(
     "/health",
     summary="Health Check",
-    description="Verifica el estado de salud de la aplicación y sus dependencias."
+    description="Verifica el estado de salud de la aplicación y sus dependencias.",
 )
 def health_check():
     """
@@ -318,11 +326,14 @@ def health_check():
     return success_response(
         data={
             "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),  # ✅ Fix: timestamp dinámico
-            "version": "1.0.0"
+            "timestamp": datetime.now(
+                timezone.utc
+            ).isoformat(),  # ✅ Fix: timestamp dinámico
+            "version": "1.0.0",
         },
         message="API funcionando correctamente",
     )
+
 
 # ============================================================================
 # INICIALIZACIÓN COMPLETADA
