@@ -259,8 +259,8 @@ from routers.router_fotos import router_public as fotos_public_router
 app.include_router(fotos_driver_router, prefix="/api")
 app.include_router(fotos_admin_router, prefix="/api")
 app.include_router(
-    fotos_public_router, prefix="/api"
-)  # Registra GET /api/uploads/fotos/{filename}
+    fotos_public_router
+)  # Sin prefijo /api - el router ya tiene /uploads/fotos
 
 # 📊 Estado en vivo (Admin only)
 from routers.router_estado_vivo import router as estado_vivo_router
