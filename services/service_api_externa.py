@@ -165,17 +165,50 @@ class APIExternaService:
         data: RegistrarPosicionRequest,
     ) -> dict[str, Any]:
         self._validate_config()
-        self._validate_perfil_id_config()
+        p_id = str(data.perfil_id) if data.perfil_id else self.perfil_id
+        if not p_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El campo perfil_id es obligatorio.",
+            )
         payload = {
             "lat": data.lat,
             "lon": data.lon,
-            "perfil_id": self.perfil_id,
+            "perfil_id": p_id,
         }
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 response = await client.post(
                     f"{self.api_base_url}/api/recorridos/{recorrido_id}/posiciones",
                     json=payload,
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"No se pudo conectar con la API externa: {exc}",
+            ) from exc
+
+        if response.is_error:
+            self._raise_external_error(response)
+        return response.json()
+
+    async def listar_posiciones_recorrido(
+        self,
+        recorrido_id: str,
+        perfil_id: str | None = None,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        self._validate_config()
+        p_id = perfil_id or self.perfil_id
+        if not p_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="El campo perfil_id es obligatorio.",
+            )
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    f"{self.api_base_url}/api/recorridos/{recorrido_id}/posiciones",
+                    params={"perfil_id": p_id},
                 )
         except httpx.RequestError as exc:
             raise HTTPException(

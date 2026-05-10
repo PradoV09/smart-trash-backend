@@ -3,9 +3,12 @@
 from __future__ import annotations
 from uuid import UUID
 from fastapi import HTTPException, status
+from core.dependecies import DriverDep
 from core.response_builders import success_response
+from models.model_usuarios import Usuario
 from schemas.schema_recorridos_externos import (
     IniciarRecorridoRequest,
+    PosicionesRecorridoResponse,
     RecorridoResponse,
     RegistrarPosicionRequest,
 )
@@ -25,6 +28,8 @@ async def iniciar_recorrido(
             data=recorrido,
             message="Recorrido iniciado exitosamente en la API externa.",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error al iniciar recorrido externo: {str(e)}")
         raise HTTPException(
@@ -36,6 +41,7 @@ async def iniciar_recorrido(
 async def registrar_posicion(
     recorrido_id: UUID,
     data: RegistrarPosicionRequest,
+    _: Usuario = DriverDep,
 ) -> SuccessResponse[RecorridoResponse]:
     """Registra una posición GPS en un recorrido de la API externa."""
     try:
@@ -44,9 +50,32 @@ async def registrar_posicion(
             data=posicion,
             message="Posición registrada exitosamente en la API externa.",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error al registrar posición externa en recorrido {recorrido_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al enviar posición al servicio externo: {str(e)}"
+        )
+
+
+async def listar_posiciones(
+    recorrido_id: UUID,
+    perfil_id: str | None,
+) -> SuccessResponse[list[PosicionesRecorridoResponse] | PosicionesRecorridoResponse]:
+    """Lista posiciones GPS de un recorrido desde la API externa."""
+    try:
+        posiciones = await APIExternaService().listar_posiciones_recorrido(str(recorrido_id), perfil_id)
+        return success_response(
+            data=posiciones,
+            message="Posiciones obtenidas exitosamente desde la API externa.",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al listar posiciones externas de recorrido {recorrido_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al recuperar posiciones del servicio externo: {str(e)}"
         )
