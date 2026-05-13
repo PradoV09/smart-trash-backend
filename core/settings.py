@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = (
     "http://localhost:4200,"
     "https://smart-trash-routes-production.up.railway.app,"
-    "http://localhost:8100"
+    "http://localhost:8100",
+    "http://localhost:8101",
+    "http://localhost"
     )
     RUTAS_API_URL:       str = "http://localhost:8001"  # URL de la API externa de rutas
     FRONTEND_URL:        str = "http://localhost:4200"  # URL del frontend para reset password
