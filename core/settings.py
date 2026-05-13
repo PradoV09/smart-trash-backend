@@ -32,6 +32,7 @@ class Settings(BaseSettings):
         "http://localhost:8100",
         "http://localhost:8101",
         "http://localhost",
+        "https://localhost"
     )
     RUTAS_API_URL: str = "http://localhost:8001"  # URL de la API externa de rutas
     FRONTEND_URL: str = "http://localhost:4200"  # URL del frontend para reset password
