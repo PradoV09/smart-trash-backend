@@ -7,6 +7,7 @@ incluyendo validaciones de rol, duplicados y hash de contraseñas.
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+import base64
 from fastapi import HTTPException, status
 from models.model_usuarios import Usuario
 from models.model_perfiles import Perfil
@@ -48,9 +49,7 @@ class UsuarioService:
         await self._check_duplicado(data.username, data.correo)
 
         # Primero se valida que el rol destino exista en la tabla catálogo.
-        result = await self.db.execute(
-            select(Rol).where(Rol.id_rol == data.id_rol)
-        )
+        result = await self.db.execute(select(Rol).where(Rol.id_rol == data.id_rol))
         rol = result.scalar_one_or_none()
         if not rol:
             raise HTTPException(
@@ -64,7 +63,7 @@ class UsuarioService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"El rol '{rol.nombre.value}' no puede ser asignado por un administrador. "
-                       f"Solo se permiten los roles: admin, driver, recolector.",
+                f"Solo se permiten los roles: admin, driver, recolector.",
             )
 
         # El perfil se crea automáticamente para mantener sincronizada la relación usuario-perfil.
@@ -72,10 +71,19 @@ class UsuarioService:
         self.db.add(perfil)
         await self.db.flush()
 
+        # Decodificar la contraseña enviada en Base64
+        try:
+            password_plain = base64.b64decode(data.contraseña).decode("utf-8")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El formato de la contraseña es inválido.",
+            )
+
         usuario = Usuario(
             username=data.username,
             correo=data.correo,
-            contraseña=hash_password(data.contraseña),
+            contraseña=hash_password(password_plain),
             id_perfil=perfil.id_perfil,
             id_rol=rol.id_rol,
             activo=data.activo,
@@ -114,9 +122,7 @@ class UsuarioService:
 
         # Si se está actualizando el rol, validar que sea permitido
         if data.id_rol is not None:
-            result = await self.db.execute(
-                select(Rol).where(Rol.id_rol == data.id_rol)
-            )
+            result = await self.db.execute(select(Rol).where(Rol.id_rol == data.id_rol))
             rol = result.scalar_one_or_none()
             if not rol:
                 raise HTTPException(
@@ -128,12 +134,19 @@ class UsuarioService:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"El rol '{rol.nombre.value}' no puede ser asignado por un administrador. "
-                           f"Solo se permiten los roles: admin, driver, recolector.",
+                    f"Solo se permiten los roles: admin, driver, recolector.",
                 )
 
         for campo, valor in data.model_dump(exclude_none=True).items():
             if campo == "contraseña":
-                valor = hash_password(valor)
+                try:
+                    password_plain = base64.b64decode(valor).decode("utf-8")
+                except Exception:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="El formato de la contraseña es inválido.",
+                    )
+                valor = hash_password(password_plain)
             setattr(usuario, campo, valor)
         await self.db.flush()
         await self.db.commit()
