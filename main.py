@@ -247,9 +247,13 @@ app.include_router(tripulacion_router, prefix="/api")
 # 📍 Posiciones GPS del recorrido (Driver + Admin)
 from routers.router_posiciones import router_driver as posiciones_driver_router
 from routers.router_posiciones import router_admin as posiciones_admin_router
+from routers.router_posiciones import router_imagen as posiciones_imagen_router
+from routers.router_posiciones import router_public as posiciones_public_router
 
 app.include_router(posiciones_driver_router, prefix="/api")
 app.include_router(posiciones_admin_router, prefix="/api")
+app.include_router(posiciones_imagen_router)
+app.include_router(posiciones_public_router)
 
 # 📷 Fotos/Evidencia del recorrido (Driver + Admin)
 from routers.router_fotos import router_driver as fotos_driver_router
@@ -275,8 +279,9 @@ app.include_router(estado_vivo_router, prefix="/api")
 upload_dir = "uploads"
 if not os.path.exists(upload_dir):
     os.makedirs(upload_dir)
-    # Crear también el subdirectorio fotos para evitar errores iniciales
+    # Crear también los subdirectorios para evitar errores iniciales
     os.makedirs(os.path.join(upload_dir, "fotos"), exist_ok=True)
+    os.makedirs(os.path.join(upload_dir, "posiciones"), exist_ok=True)
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 

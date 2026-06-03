@@ -59,6 +59,7 @@ class PosicionResponse(BaseModel):
     """Schema para retornar una posición almacenada."""
     
     id: int = Field(..., description="ID único de la posición")
+    uuid: str = Field(..., description="UUID de la posición")
     id_asignacion: int = Field(..., description="ID de la asignación asociada")
     latitud: float
     longitud: float
@@ -66,6 +67,7 @@ class PosicionResponse(BaseModel):
     speed: Optional[float] = None
     bearing: Optional[float] = None
     timestamp: datetime
+    imagen: Optional[str] = Field(None, description="Ruta de la imagen asociada")
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -80,3 +82,34 @@ class PosicionListResponse(BaseModel):
     page_size: int = Field(..., description="Tamaño de página")
     has_next: bool = Field(..., description="Hay más páginas")
     has_prev: bool = Field(..., description="Hay página anterior")
+
+
+class PosicionImagenCreate(BaseModel):
+    """Schema para recibir la imagen de una posición."""
+    
+    imagen_base64: str = Field(
+        ...,
+        description="Imagen en formato Base64 (data:image/jpeg;base64,...)"
+    )
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "imagen_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+        }
+    })
+
+
+class PosicionImagenResponse(BaseModel):
+    """Schema para retornar la respuesta de subida de imagen."""
+    
+    posicion_id: str = Field(..., description="UUID de la posición")
+    imagen: str = Field(..., description="Ruta de la imagen almacenada")
+    url: str = Field(..., description="URL completa de acceso a la imagen")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "posicion_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "imagen": "posiciones/3fa85f64-5717-4562-b3fc-2c963f66afa6.webp",
+            "url": "https://dominio.com/storage/posiciones/3fa85f64-5717-4562-b3fc-2c963f66afa6.webp"
+        }
+    })

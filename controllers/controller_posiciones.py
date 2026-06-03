@@ -5,7 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, DriverDep, AdminDep
 from core.response_builders import success_response
 from schemas.schema_responses import SuccessResponse
-from schemas.schema_posiciones import PosicionCreate, PosicionResponse, PosicionListResponse
+from schemas.schema_posiciones import (
+    PosicionCreate,
+    PosicionResponse,
+    PosicionListResponse,
+    PosicionImagenCreate,
+    PosicionImagenResponse,
+)
 from models.model_usuarios import Usuario
 from services.service_posiciones import PosicionesService
 import logging
@@ -78,4 +84,28 @@ async def obtener_ultima_posicion(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al recuperar la última posición GPS."
+        )
+
+
+async def registrar_imagen_posicion(
+    posicion_id: str,
+    data: PosicionImagenCreate,
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = DriverDep,
+) -> SuccessResponse[PosicionImagenResponse]:
+    """Registra o actualiza la imagen asociada a una posición específica."""
+    try:
+        service = PosicionesService(db)
+        imagen = await service.registrar_imagen_posicion(posicion_id, data.imagen_base64)
+        return success_response(
+            data=imagen,
+            message="Imagen registrada correctamente."
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al registrar imagen para posición {posicion_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al procesar la imagen."
         )

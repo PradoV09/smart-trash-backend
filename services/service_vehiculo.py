@@ -15,6 +15,7 @@ from fastapi import HTTPException, status
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
 from schemas.schema_vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoResponse
 from services.service_api_externa import APIExternaService
+from services.external_sync_service import ExternalSyncService, SyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -112,23 +113,82 @@ class VehiculoService:
         base = VehiculoResponse.model_validate(vehiculo)
         return base.model_copy(update={"datos_api_externo": datos})
 
-    async def actualizar_vehiculo_por_id(self, id_vehiculo: int, data: VehiculoUpdate) -> VehiculoResponse:
+    async def actualizar_vehiculo_por_id(
+        self, id_vehiculo: int, data: VehiculoUpdate
+    ) -> VehiculoResponse:
         """Actualiza parcialmente los datos de un vehículo existente."""
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         for campo, valor in data.model_dump(exclude_none=True).items():
             setattr(vehiculo, campo, valor)
         await self.db.flush()
+
+        # Sincronizar con API externa si el vehículo tiene ID externo
+        if vehiculo.id_externo:
+            try:
+                sync_service = ExternalSyncService()
+                metadata = await sync_service.sync_update_vehiculo(
+                    id_externo=vehiculo.id_externo,
+                    placa=vehiculo.placa,
+                    modelo=vehiculo.modelo,
+                    capacidad_m3=vehiculo.capacidad_m3,
+                    estado=(
+                        vehiculo.estado.value
+                        if hasattr(vehiculo.estado, "value")
+                        else str(vehiculo.estado)
+                    ),
+                    recurso_id_local=id_vehiculo,
+                )
+                if metadata.estado != SyncStatus.SUCCESS:
+                    logger.warning(
+                        "Vehículo %s actualizado en BD local pero sincronización falló: %s",
+                        id_vehiculo,
+                        metadata.error_message,
+                    )
+            except Exception as e:
+                logger.warning(
+                    "Vehículo %s actualizado en BD local pero no se pudo sincronizar: %s",
+                    id_vehiculo,
+                    str(e),
+                )
+
         return await self.obtener_vehiculo_por_id(id_vehiculo)
 
-    async def cambiar_estado_vehiculo(self, id_vehiculo: int, estado: EstadoVehiculo) -> VehiculoResponse:
+    async def cambiar_estado_vehiculo(
+        self, id_vehiculo: int, estado: EstadoVehiculo
+    ) -> VehiculoResponse:
         """Actualiza únicamente el estado operativo del vehículo."""
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         vehiculo.estado = estado
         await self.db.flush()
+
+        # Sincronizar con API externa si el vehículo tiene ID externo
+        if vehiculo.id_externo:
+            try:
+                sync_service = ExternalSyncService()
+                metadata = await sync_service.sync_update_vehiculo(
+                    id_externo=vehiculo.id_externo,
+                    estado=estado.value if hasattr(estado, "value") else str(estado),
+                    recurso_id_local=id_vehiculo,
+                )
+                if metadata.estado != SyncStatus.SUCCESS:
+                    logger.warning(
+                        "Estado del vehículo %s actualizado en BD local pero sincronización falló: %s",
+                        id_vehiculo,
+                        metadata.error_message,
+                    )
+            except Exception as e:
+                logger.warning(
+                    "Estado del vehículo %s actualizado en BD local pero no se pudo sincronizar: %s",
+                    id_vehiculo,
+                    str(e),
+                )
+
         return await self.obtener_vehiculo_por_id(id_vehiculo)
 
     async def eliminar_vehiculo(self, id_vehiculo: int) -> None:
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
+        id_externo = vehiculo.id_externo  # Guardar antes de eliminar
+
         await self.db.delete(vehiculo)
         try:
             await self.db.flush()
@@ -140,3 +200,24 @@ class VehiculoService:
                     "u otros registros vinculados."
                 ),
             ) from None
+
+        # Sincronizar eliminación con API externa si el vehículo tenía ID externo
+        if id_externo:
+            try:
+                sync_service = ExternalSyncService()
+                metadata = await sync_service.sync_delete_vehiculo(
+                    id_externo=id_externo,
+                    recurso_id_local=id_vehiculo,
+                )
+                if metadata.estado != SyncStatus.SUCCESS:
+                    logger.warning(
+                        "Vehículo %s eliminado de BD local pero sincronización falló: %s",
+                        id_vehiculo,
+                        metadata.error_message,
+                    )
+            except Exception as e:
+                logger.warning(
+                    "Vehículo %s eliminado de BD local pero no se pudo sincronizar eliminación: %s",
+                    id_vehiculo,
+                    str(e),
+                )
