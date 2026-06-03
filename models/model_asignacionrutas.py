@@ -4,6 +4,7 @@
 
 import enum
 from sqlalchemy import Column, Enum, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from database import Base
 
@@ -24,3 +25,7 @@ class AsignacionRutas(Base):
     fecha         = Column(DateTime(timezone=True), nullable=False)
     estado        = Column(Enum(EstadoAsignacion), nullable=False, default=EstadoAsignacion.pendiente)
     created_at    = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships without back_populates to avoid circular dependencies
+    vehiculo    = relationship("Vehiculo")
+    tripulacion = relationship("Tripulacion")
