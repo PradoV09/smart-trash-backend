@@ -25,6 +25,6 @@ class Usuario(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     perfil             = relationship("Perfil", back_populates="usuario")
     rol                = relationship("Rol", back_populates="usuarios")
-    reportes_actividad = relationship("ReporteActividad", back_populates="usuario")
+    reportes_actividad = relationship("ReporteActividad")
     tripulaciones_legacy = relationship("TripulacionAsignacion", back_populates="usuario")
     miembros_tripulacion = relationship("TripulacionMiembro", back_populates="usuario")

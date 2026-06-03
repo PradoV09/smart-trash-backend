@@ -17,7 +17,7 @@ class Tripulacion(Base):
 
     # Relaciones
     miembros    = relationship("TripulacionMiembro", back_populates="tripulacion", cascade="all, delete-orphan")
-    asignaciones = relationship("AsignacionRutas", back_populates="tripulacion")
+    asignaciones = relationship("AsignacionRutas")
 
 class TripulacionMiembro(Base):
     __tablename__ = "tripulacion_miembros"

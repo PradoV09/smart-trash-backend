@@ -30,14 +30,21 @@ async def crear_tablas():
 
     Esta función se ejecuta en el `lifespan` de FastAPI y garantiza
     que el esquema base esté disponible al iniciar en desarrollo.
+    
+    IMPORTANTE: El orden de importación es crítico para resolver relaciones
+    string-based en SQLAlchemy. Los modelos base deben importarse primero.
     """
-    import models.model_usuarios
-    import models.model_roles
+    # Importar modelos base primero (sin dependencias)
     import models.model_perfiles
+    import models.model_roles
+    import models.model_usuarios
+    
+    # Importar modelos que dependen de los base
     import models.model_reportes
     import models.model_vehiculo
     import models.model_tripulacion
     import models.model_asignacionrutas
+    import models.model_asignaciontripulacion  # Importar para RolTripulacion
     import models.model_auth
     import models.model_posiciones
     import models.model_fotos
