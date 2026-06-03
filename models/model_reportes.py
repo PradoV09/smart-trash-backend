@@ -2,7 +2,7 @@
 
 """Modelo ORM de reportes y bitácora de actividad del sistema."""
 
-from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from database import Base
@@ -18,5 +18,7 @@ class ReporteActividad(Base):
     asunto = Column(String(100), nullable=False)
     evidencia_url = Column(String(255), nullable=True)
     u_rol_cache = Column(String(20), nullable=True)
+    latitud = Column(Float, nullable=True)
+    longitud = Column(Float, nullable=True)
 
     usuario = relationship("Usuario", back_populates="reportes_actividad")

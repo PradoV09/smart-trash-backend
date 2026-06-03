@@ -16,6 +16,8 @@ class ReporteCreate(BaseModel):
     descripcion:   str
     asunto:        str
     evidencia_url: str | None = None
+    latitud:       float | None = None
+    longitud:      float | None = None
 
     @classmethod
     def as_form(
@@ -26,6 +28,8 @@ class ReporteCreate(BaseModel):
         descripcion: str = Form(...),
         asunto: str = Form(...),
         evidencia_url: Optional[str] = Form(None),
+        latitud: Optional[float] = Form(None),
+        longitud: Optional[float] = Form(None),
     ):
         return cls(
             id_usuario=id_usuario,
@@ -34,6 +38,8 @@ class ReporteCreate(BaseModel):
             descripcion=descripcion,
             asunto=asunto,
             evidencia_url=evidencia_url,
+            latitud=latitud,
+            longitud=longitud,
         )
 
 class ReporteResponse(BaseModel):
@@ -45,6 +51,8 @@ class ReporteResponse(BaseModel):
     asunto:        str
     evidencia_url: str | None
     fecha:         datetime
+    latitud:       float | None = None
+    longitud:      float | None = None
     
     # Campos virtuales calculados
     terminado: bool = False
@@ -70,6 +78,8 @@ class ReporteDriverCreate(BaseModel):
     estado: str  # baja, media, alta
     fotos: Optional[List[dict]] = None  # Array de fotos en base64
     id_asignacion: Optional[int] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
 
 # Response para conductores (adaptado al modelo real)
 class ReporteDriverResponse(BaseModel):
@@ -81,6 +91,8 @@ class ReporteDriverResponse(BaseModel):
     u_gmail_cache: Optional[str] = None
     u_rol_cache: Optional[str] = None  # Aquí guardamos el estado como workaround
     evidencia_url: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
     # Campos virtuales para mantener compatibilidad con la API
     estado: Optional[str] = None  # Se extraerá de u_rol_cache
     terminado: Optional[bool] = False  # Se detectará de la descripción
@@ -106,6 +118,8 @@ class ReporteDriverResponse(BaseModel):
             u_gmail_cache=reporte.u_gmail_cache,
             u_rol_cache=reporte.u_rol_cache,
             evidencia_url=reporte.evidencia_url,
+            latitud=reporte.latitud,
+            longitud=reporte.longitud,
             estado=estado,
             terminado=terminado
         )

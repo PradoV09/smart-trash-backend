@@ -36,8 +36,8 @@ router.post(
     status_code=status.HTTP_201_CREATED,
     summary="Registrar posicion de recorrido",
     description=(
-        "Registra una nueva posicion GPS para un recorrido de la API externa. "
-        "Acepta `lat`, `lon` y opcionalmente `perfil_id`. "
+        "Registra una coordenada GPS en un recorrido activo. "
+        "Acepta `lat`, `lon` y `perfil_id` (todos requeridos). "
         "Solo usuarios con rol `driver` pueden consumir este endpoint."
     ),
     response_description="Posicion registrada correctamente.",

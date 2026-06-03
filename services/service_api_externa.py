@@ -165,12 +165,7 @@ class APIExternaService:
         data: RegistrarPosicionRequest,
     ) -> dict[str, Any]:
         self._validate_config()
-        p_id = str(data.perfil_id) if data.perfil_id else self.perfil_id
-        if not p_id:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="El campo perfil_id es obligatorio.",
-            )
+        p_id = str(data.perfil_id)
         payload = {
             "lat": data.lat,
             "lon": data.lon,
