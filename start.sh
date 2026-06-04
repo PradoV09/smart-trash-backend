@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# La base de datos ya está lista gracias a depends_on en docker-compose
-
+# Ejecutar migraciones de Alembic
 echo "Ejecutando migraciones..."
-alembic upgrade head
+alembic upgrade head || echo "Migraciones fallaron o ya estaban aplicadas"
 
+# Iniciar aplicación con el puerto de Railway
 echo "Iniciando aplicación..."
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --ws websockets --ws-ping-interval 30 --ws-ping-timeout 60
