@@ -70,23 +70,30 @@ class PosicionesService:
         data: PosicionCreate,
     ) -> PosicionResponse:
         """Registra una nueva posición GPS."""
+        logger.info(f"Registrando posición para asignación {id_asignacion}: lat={data.latitud}, lon={data.longitud}, timestamp={data.timestamp}")
+        
         # Validar asignación
         await self._validar_asignacion_en_curso(id_asignacion)
         
         # Crear posición
-        posicion = RecorridoPosicion(
-            id_asignacion=id_asignacion,
-            latitud=data.latitud,
-            longitud=data.longitud,
-            accuracy=data.accuracy,
-            speed=data.speed,
-            bearing=data.bearing,
-            timestamp=data.timestamp,
-        )
-        
-        self.db.add(posicion)
-        await self.db.flush()
-        await self.db.refresh(posicion)
+        try:
+            posicion = RecorridoPosicion(
+                id_asignacion=id_asignacion,
+                latitud=data.latitud,
+                longitud=data.longitud,
+                accuracy=data.accuracy,
+                speed=data.speed,
+                bearing=data.bearing,
+                timestamp=data.timestamp,
+            )
+            
+            self.db.add(posicion)
+            await self.db.flush()
+            await self.db.refresh(posicion)
+            logger.info(f"Posición registrada exitosamente con ID {posicion.id}")
+        except Exception as e:
+            logger.error(f"Error al crear posición en BD: {str(e)}", exc_info=True)
+            raise
         
         # Notificar por WebSocket a los administradores
         await ws_manager.broadcast(id_asignacion, {

@@ -27,6 +27,7 @@ async def registrar_posicion(
 ) -> SuccessResponse[PosicionResponse]:
     """Registra una nueva posición GPS para una asignación."""
     try:
+        logger.info(f"Recibiendo posición para asignación {id_asignacion}: {data.model_dump()}")
         service = PosicionesService(db)
         posicion = await service.registrar_posicion(id_asignacion, data)
         return success_response(
@@ -36,7 +37,7 @@ async def registrar_posicion(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error al registrar posición en asignación {id_asignacion}: {str(e)}")
+        logger.error(f"Error al registrar posición en asignación {id_asignacion}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno al registrar la posición GPS: {str(e)}"

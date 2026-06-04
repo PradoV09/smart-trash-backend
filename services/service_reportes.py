@@ -174,12 +174,15 @@ class ReporteService:
                         )
                         logger.info(f"Posición registrada en API externa para reporte {reporte.id_registro}: {posicion_response}")
 
-                        # Si la respuesta incluye un posicion_id, intentar subir la imagen
+                        # Si la respuesta incluye un posicion_id, subir la imagen
                         if posicion_response and 'id' in posicion_response:
                             posicion_id = posicion_response['id']
-                            # Nota: La API externa debe tener el endpoint POST /api/recorridos/posiciones/{posicion_id}/imagen
-                            # Por ahora, logueamos la intención ya que este endpoint puede no estar implementado
-                            logger.info(f"Imagen podría subirse a posición {posicion_id} en API externa")
+                            imagen_response = await api_service.subir_imagen_posicion(
+                                posicion_id=posicion_id,
+                                imagen_base64=foto_dict['imagen_base64'],
+                                perfil_id=perfil_id
+                            )
+                            logger.info(f"Imagen subida a API externa para posición {posicion_id}: {imagen_response}")
                     except Exception as e:
                         logger.warning(f"No se pudo enviar posición/imagen a API externa: {str(e)}")
             except Exception as e:

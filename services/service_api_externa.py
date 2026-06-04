@@ -492,3 +492,56 @@ class APIExternaService:
                 ),
             )
         return self._normalizar_lista_vehiculos(payload)
+
+    async def subir_imagen_posicion(
+        self,
+        posicion_id: str,
+        imagen_base64: str,
+        perfil_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Sube una imagen a una posición en la API externa.
+        
+        Args:
+            posicion_id: ID de la posición en la API externa
+            imagen_base64: Imagen en formato base64
+            perfil_id: ID del perfil (opcional, usa el configurado por defecto)
+            
+        Returns:
+            dict: Respuesta de la API externa
+        """
+        self._validate_config()
+        p_id = perfil_id or self.perfil_id
+        
+        payload = {
+            "imagen_base64": imagen_base64,
+            "perfil_id": p_id,
+        }
+        
+        logger.info(f"Subiendo imagen a posición {posicion_id} en API externa")
+        
+        try:
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.api_base_url}/api/recorridos/posiciones/{posicion_id}/imagen",
+                    json=payload,
+                    headers=headers
+                )
+        except httpx.RequestError as exc:
+            logger.warning(f"Error de conexión al subir imagen a API externa: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"No se pudo conectar con la API externa: {exc}",
+            ) from exc
+
+        if response.is_error:
+            logger.warning(f"Error al subir imagen a API externa: {response.text}")
+            # No lanzamos excepción para no romper el flujo principal
+            return {"error": response.text}
+        
+        result = response.json()
+        logger.info(f"Imagen subida exitosamente a posición {posicion_id}: {result}")
+        return result

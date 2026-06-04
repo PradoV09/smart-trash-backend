@@ -92,11 +92,15 @@ class AsignacionService:
         return await self._enriquecer_con_rutas(asignaciones)
 
     async def obtener_asignaciones_por_usuario(self, id_usuario: int) -> list[AsignacionRutas]:
+        from datetime import datetime, timezone
+        hoy = datetime.now(timezone.utc).date()
+        
         result = await self.db.execute(
             self._con_relaciones()
             .join(AsignacionRutas.tripulacion)
             .join(Tripulacion.miembros)
             .where(TripulacionMiembro.id_usuario == id_usuario)
+            .where(AsignacionRutas.fecha >= hoy)
         )
         asignaciones = result.scalars().all()
         return await self._enriquecer_con_rutas(asignaciones)
