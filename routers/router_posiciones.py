@@ -47,8 +47,11 @@ router_admin.get(
     response_model=SuccessResponse[PosicionResponse | None]
 )(controller_posiciones.obtener_ultima_posicion)
 
-router_admin.get(
-    "/posiciones/activas",
+# Router específico para posiciones activas (ruta que espera el frontend)
+router_posiciones_activas = APIRouter(prefix="/admin/posiciones", tags=["Admin: Posiciones Activas"])
+
+router_posiciones_activas.get(
+    "/activas",
     response_model=SuccessResponse,
     summary="Obtener posiciones activas de vehículos en ruta",
     description="Retorna las posiciones más recientes de todos los vehículos que están actualmente en ruta (estado 'en_curso')"

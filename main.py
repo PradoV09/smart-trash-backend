@@ -247,11 +247,13 @@ app.include_router(tripulacion_router, prefix="/api")
 # 📍 Posiciones GPS del recorrido (Driver + Admin)
 from routers.router_posiciones import router_driver as posiciones_driver_router
 from routers.router_posiciones import router_admin as posiciones_admin_router
+from routers.router_posiciones import router_posiciones_activas as posiciones_activas_router
 from routers.router_posiciones import router_imagen as posiciones_imagen_router
 from routers.router_posiciones import router_public as posiciones_public_router
 
 app.include_router(posiciones_driver_router, prefix="/api")
 app.include_router(posiciones_admin_router, prefix="/api")
+app.include_router(posiciones_activas_router, prefix="/api")
 app.include_router(posiciones_imagen_router)
 app.include_router(posiciones_public_router)
 
