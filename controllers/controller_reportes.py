@@ -45,10 +45,10 @@ async def listar_reportes(
         reportes = await ReporteService(db).obtener_reportes(id_usuario=id_usuario, asunto=asunto)
         return success_response(data=reportes, message="Reportes obtenidos exitosamente.")
     except Exception as e:
-        logger.error(f"Error al listar reportes: {str(e)}")
+        logger.error(f"Error al listar reportes: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al obtener la lista de reportes."
+            detail=f"Error al obtener la lista de reportes: {str(e)}"
         )
 
 
@@ -149,4 +149,4 @@ async def obtener_reporte_driver(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al recuperar el reporte del conductor."
-        )
+        )
