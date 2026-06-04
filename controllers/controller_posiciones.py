@@ -110,3 +110,23 @@ async def registrar_imagen_posicion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno al procesar la imagen."
         )
+
+
+async def obtener_posiciones_activas(
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = AdminDep,
+) -> SuccessResponse:
+    """Obtiene las posiciones más recientes de todos los vehículos activos en ruta."""
+    try:
+        service = PosicionesService(db)
+        posiciones = await service.obtener_posiciones_activas()
+        return success_response(
+            data=posiciones,
+            message="Posiciones activas obtenidas exitosamente."
+        )
+    except Exception as e:
+        logger.error(f"Error al obtener posiciones activas: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al recuperar posiciones activas."
+        )

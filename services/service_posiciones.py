@@ -409,3 +409,40 @@ class PosicionesService:
             imagen=ruta_relativa,
             url=url
         )
+
+    async def obtener_posiciones_activas(self) -> list[dict]:
+        """Obtiene las posiciones más recientes de todos los vehículos activos en ruta."""
+        # Obtener asignaciones en curso
+        result = await self.db.execute(
+            select(AsignacionRutas).where(
+                AsignacionRutas.estado == EstadoAsignacion.en_curso
+            )
+        )
+        asignaciones_activas = result.scalars().all()
+        
+        posiciones_activas = []
+        
+        for asignacion in asignaciones_activas:
+            # Obtener la última posición de cada asignación
+            result_pos = await self.db.execute(
+                select(RecorridoPosicion)
+                .where(RecorridoPosicion.id_asignacion == asignacion.id_asignacion)
+                .order_by(desc(RecorridoPosicion.timestamp))
+                .limit(1)
+            )
+            posicion = result_pos.scalar_one_or_none()
+            
+            if posicion:
+                posiciones_activas.append({
+                    "id_asignacion": asignacion.id_asignacion,
+                    "id_vehiculo": asignacion.id_vehiculo,
+                    "id_ruta": asignacion.id_ruta,
+                    "latitud": posicion.latitud,
+                    "longitud": posicion.longitud,
+                    "timestamp": posicion.timestamp,
+                    "speed": posicion.speed,
+                    "bearing": posicion.bearing,
+                    "accuracy": posicion.accuracy
+                })
+        
+        return posiciones_activas

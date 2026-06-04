@@ -47,6 +47,13 @@ router_admin.get(
     response_model=SuccessResponse[PosicionResponse | None]
 )(controller_posiciones.obtener_ultima_posicion)
 
+router_admin.get(
+    "/posiciones/activas",
+    response_model=SuccessResponse,
+    summary="Obtener posiciones activas de vehículos en ruta",
+    description="Retorna las posiciones más recientes de todos los vehículos que están actualmente en ruta (estado 'en_curso')"
+)(controller_posiciones.obtener_posiciones_activas)
+
 
 # Router para driver - registrar/actualizar imagen de posición
 router_imagen = APIRouter(prefix="/api/recorridos/posiciones", tags=["Driver: Imagen Posición"])
