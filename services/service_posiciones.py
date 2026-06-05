@@ -24,7 +24,7 @@ from core.config import get_app_config
 import logging
 
 from models.model_asignacion_externa import AsignacionExterna
-from services.service_api_externa import APIExternaService
+from services.external_sync_service import get_external_sync_service, SyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -114,15 +114,26 @@ class PosicionesService:
                 select(AsignacionExterna).where(AsignacionExterna.id_asignacion == id_asignacion)
             )
             asignacion_externa = result_ext.scalar_one_or_none()
-            
+
             if asignacion_externa and asignacion_externa.recorrido_externo_id:
-                api_service = APIExternaService()
-                await api_service.registrar_posicion_externa(
-                    recorrido_externo_id=asignacion_externa.recorrido_externo_id,
-                    latitud=float(data.latitud),
-                    longitud=float(data.longitud),
-                    perfil_id="f105a9d3-13b3-4066-b5f7-edae6801e366"
-                )
+            sync_service = get_external_sync_service()
+            if sync_service.es_sincronizacion_habilitada():
+                try:
+                    metadata = await sync_service.sync_create_posicion(
+                        recorrido_externo_id=asignacion_externa.recorrido_externo_id,
+                        latitud=float(data.latitud),
+                        longitud=float(data.longitud),
+                        perfil_id=None,  # Usa el configurado por defecto dinámicamente
+                        recurso_id_local=posicion.id,
+                    )
+                    if metadata.estado != SyncStatus.SUCCESS:
+                        logger.warning(
+                            f"[SYNC] Error al sincronizar posición en asignación {id_asignacion}: {metadata.error_message}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"[SYNC ERROR] Error inesperado sincronizando posición: {str(e)}"
+                    )
         except Exception as e:
             logger.error(f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}")
             # No lanzamos excepción para no romper el flujo principal si la API externa falla

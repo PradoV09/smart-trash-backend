@@ -15,7 +15,7 @@ from fastapi import HTTPException, status
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
 from schemas.schema_vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoResponse
 from services.service_api_externa import APIExternaService
-from services.external_sync_service import ExternalSyncService, SyncStatus
+from services.external_sync_service import get_external_sync_service, SyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class VehiculoService:
         # Sincronizar con API externa si el vehículo tiene ID externo
         if vehiculo.id_externo:
             try:
-                sync_service = ExternalSyncService()
+                sync_service = get_external_sync_service()
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
                     placa=vehiculo.placa,
@@ -164,7 +164,7 @@ class VehiculoService:
         # Sincronizar con API externa si el vehículo tiene ID externo
         if vehiculo.id_externo:
             try:
-                sync_service = ExternalSyncService()
+                sync_service = get_external_sync_service()
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
                     estado=estado.value if hasattr(estado, "value") else str(estado),
@@ -204,7 +204,7 @@ class VehiculoService:
         # Sincronizar eliminación con API externa si el vehículo tenía ID externo
         if id_externo:
             try:
-                sync_service = ExternalSyncService()
+                sync_service = get_external_sync_service()
                 metadata = await sync_service.sync_delete_vehiculo(
                     id_externo=id_externo,
                     recurso_id_local=id_vehiculo,
