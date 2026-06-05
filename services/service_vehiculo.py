@@ -53,8 +53,8 @@ class VehiculoService:
             try:
                 metadata = await sync_service.sync_create_vehiculo(
                     placa=vehiculo.placa,
-                    marca="N/A",  # Se puede ajustar si el modelo local soporta marca
-                    modelo=vehiculo.modelo or "N/A",
+                    marca=None,
+                    modelo=vehiculo.modelo,
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
                 )
@@ -140,7 +140,7 @@ class VehiculoService:
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
                     placa=vehiculo.placa,
-                    modelo=vehiculo.modelo or "N/A",
+                    modelo=vehiculo.modelo,
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=id_vehiculo,
                 )

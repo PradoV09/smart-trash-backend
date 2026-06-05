@@ -329,8 +329,8 @@ class ExternalSyncService:
     async def sync_create_vehiculo(
         self,
         placa: str,
-        marca: str,
-        modelo: str,
+        marca: Optional[str],
+        modelo: Optional[str],
         activo: bool,
         recurso_id_local: Optional[int] = None,
     ) -> SyncMetadata:
