@@ -69,7 +69,7 @@ class VehiculoResponse(BaseModel):
     id_externo:   Optional[str] = None
     placa:        str
     modelo:       Optional[str] = None
-    capacidad_m3: Optional[float]
+    capacidad_m3: Optional[float] = None
     estado:       EstadoVehiculo
     created_at:   datetime
     datos_api_externo: Optional[dict] = None
