@@ -276,6 +276,10 @@ class ExternalSyncService:
                     response = await client.post(
                         url, json=json_payload, params=query_params
                     )
+                elif metodo == "PUT":
+                    response = await client.put(
+                        url, json=json_payload, params=query_params
+                    )
                 elif metodo == "PATCH":
                     response = await client.patch(
                         url, json=json_payload, params=query_params
@@ -412,7 +416,7 @@ class ExternalSyncService:
         recurso_id_local: Optional[int] = None,
     ) -> SyncMetadata:
         """
-        Sincroniza la actualización de un vehículo con la API externa.
+        Sincroniza la actualización de un vehículo con la API externa usando PUT.
 
         Args:
             id_externo: ID del vehículo en API externa
@@ -430,19 +434,18 @@ class ExternalSyncService:
             self._validar_config()
             perfil_id = self._validar_perfil_id()
 
-            payload = {"perfil_id": perfil_id}
-            if placa:
-                payload["placa"] = placa
-            if marca:
-                payload["marca"] = marca
-            if modelo is not None:
-                payload["modelo"] = modelo
-            if activo is not None:
-                payload["activo"] = activo
+            # La API externa usa PUT y espera todos los campos en la actualización.
+            payload = {
+                "perfil_id": perfil_id,
+                "placa": placa,
+                "marca": marca,
+                "modelo": modelo,
+                "activo": activo if activo is not None else True,
+            }
 
-            logger.info(f"[SYNC] Actualizando vehículo {id_externo} en API externa")
+            logger.info(f"[SYNC] Actualizando vehículo {id_externo} en API externa usando PUT. Payload: {payload}")
             status_code, response = await self._hacer_request(
-                "PATCH", f"/api/vehiculos/{id_externo}", json_payload=payload
+                "PUT", f"/api/vehiculos/{id_externo}", json_payload=payload
             )
 
             logger.info(f"[SYNC] Vehículo {id_externo} actualizado exitosamente")

@@ -237,6 +237,8 @@ class VehiculoService:
                 sync_service = get_external_sync_service()
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
+                    placa=vehiculo.placa,
+                    modelo=vehiculo.modelo,
                     activo=estado != EstadoVehiculo.inactivo,
                     recurso_id_local=id_vehiculo,
                 )
