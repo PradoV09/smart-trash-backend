@@ -722,7 +722,9 @@ class ExternalSyncService:
 
     def es_sincronizacion_habilitada(self) -> bool:
         """Verifica si la sincronización está habilitada."""
-        return bool(self.api_base_url and self.perfil_id)
+        habilitada = bool(self.api_base_url and self.perfil_id)
+        logger.info(f"[SYNC CONFIG] api_base_url: {self.api_base_url}, perfil_id: {self.perfil_id}, habilitada: {habilitada}")
+        return habilitada
 
 
 # ============================================================================
