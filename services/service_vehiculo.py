@@ -156,7 +156,9 @@ class VehiculoService:
                     id_vehiculo,
                     str(e),
                 )
+        await self.db.commit()
 
+        await self.db.commit()
         return await self.obtener_vehiculo_por_id(id_vehiculo)
 
     async def cambiar_estado_vehiculo(
@@ -189,6 +191,7 @@ class VehiculoService:
                     str(e),
                 )
 
+        await self.db.commit()
         return await self.obtener_vehiculo_por_id(id_vehiculo)
 
     async def eliminar_vehiculo(self, id_vehiculo: int) -> None:

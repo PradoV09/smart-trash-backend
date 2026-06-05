@@ -287,14 +287,20 @@ class ExternalSyncService:
 
                 # Clasificar el error
                 if 400 <= response.status_code < 500:
+                    error_msg = self._extract_error_message(response)
+                    logger.error(
+                        f"[SYNC HTTP 4xx] URL: {url} | Status: {response.status_code} | Payload: {json_payload} | Error: {error_msg}"
+                    )
                     raise ExternalSync4xxException(
-                        f"API externa respondió {response.status_code}: "
-                        f"{self._extract_error_message(response)}"
+                        f"API externa respondió {response.status_code}: {error_msg}"
                     )
                 elif response.status_code >= 500:
+                    error_msg = self._extract_error_message(response)
+                    logger.error(
+                        f"[SYNC HTTP 5xx] URL: {url} | Status: {response.status_code} | Error: {error_msg}"
+                    )
                     raise ExternalSync5xxException(
-                        f"API externa respondió {response.status_code}: "
-                        f"{self._extract_error_message(response)}"
+                        f"API externa respondió {response.status_code}: {error_msg}"
                     )
 
                 try:
