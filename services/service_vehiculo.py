@@ -44,7 +44,9 @@ class VehiculoService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Ya existe un vehículo registrado con la placa '{data.placa}'.",
             )
-        vehiculo = Vehiculo(**data.model_dump())
+        # Excluir marca del modelo (no está en la BD)
+        vehiculo_data = data.model_dump(exclude={'marca'})
+        vehiculo = Vehiculo(**vehiculo_data)
         self.db.add(vehiculo)
         await self.db.flush()
 
