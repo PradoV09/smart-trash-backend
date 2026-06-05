@@ -53,13 +53,9 @@ class VehiculoService:
             try:
                 metadata = await sync_service.sync_create_vehiculo(
                     placa=vehiculo.placa,
-                    modelo=vehiculo.modelo,
-                    capacidad_m3=vehiculo.capacidad_m3,
-                    estado=(
-                        vehiculo.estado.value
-                        if hasattr(vehiculo.estado, "value")
-                        else str(vehiculo.estado)
-                    ),
+                    marca="N/A",  # Se puede ajustar si el modelo local soporta marca
+                    modelo=vehiculo.modelo or "N/A",
+                    activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
                 )
                 if metadata.estado == SyncStatus.SUCCESS:
@@ -144,13 +140,8 @@ class VehiculoService:
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
                     placa=vehiculo.placa,
-                    modelo=vehiculo.modelo,
-                    capacidad_m3=vehiculo.capacidad_m3,
-                    estado=(
-                        vehiculo.estado.value
-                        if hasattr(vehiculo.estado, "value")
-                        else str(vehiculo.estado)
-                    ),
+                    modelo=vehiculo.modelo or "N/A",
+                    activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=id_vehiculo,
                 )
                 if metadata.estado != SyncStatus.SUCCESS:
@@ -182,7 +173,7 @@ class VehiculoService:
                 sync_service = get_external_sync_service()
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
-                    estado=estado.value if hasattr(estado, "value") else str(estado),
+                    activo=estado != EstadoVehiculo.inactivo,
                     recurso_id_local=id_vehiculo,
                 )
                 if metadata.estado != SyncStatus.SUCCESS:

@@ -329,9 +329,9 @@ class ExternalSyncService:
     async def sync_create_vehiculo(
         self,
         placa: str,
-        modelo: Optional[str] = None,
-        capacidad_m3: Optional[float] = None,
-        estado: Optional[str] = None,
+        marca: str,
+        modelo: str,
+        activo: bool,
         recurso_id_local: Optional[int] = None,
     ) -> SyncMetadata:
         """
@@ -339,9 +339,9 @@ class ExternalSyncService:
 
         Args:
             placa: Placa del vehículo
-            modelo: Modelo del vehículo
-            capacidad_m3: Capacidad en m³
-            estado: Estado operativo
+            marca: Marca del vehículo
+            modelo: Año o descripción del modelo
+            activo: Indica si el vehículo está operativo
             recurso_id_local: ID local del vehículo (opcional para logging)
 
         Returns:
@@ -354,14 +354,11 @@ class ExternalSyncService:
 
             payload = {
                 "placa": placa,
+                "marca": marca,
+                "modelo": modelo,
+                "activo": activo,
                 "perfil_id": perfil_id,
             }
-            if modelo:
-                payload["modelo"] = modelo
-            if capacidad_m3 is not None:
-                payload["capacidad_m3"] = capacidad_m3
-            if estado:
-                payload["estado"] = estado
 
             logger.info(f"[SYNC] Creando vehículo {placa} en API externa")
             status_code, response = await self._hacer_request(
@@ -396,9 +393,9 @@ class ExternalSyncService:
         self,
         id_externo: str,
         placa: Optional[str] = None,
+        marca: Optional[str] = None,
         modelo: Optional[str] = None,
-        capacidad_m3: Optional[float] = None,
-        estado: Optional[str] = None,
+        activo: Optional[bool] = None,
         recurso_id_local: Optional[int] = None,
     ) -> SyncMetadata:
         """
@@ -407,9 +404,9 @@ class ExternalSyncService:
         Args:
             id_externo: ID del vehículo en API externa
             placa: Placa del vehículo (opcional)
+            marca: Marca (opcional)
             modelo: Modelo (opcional)
-            capacidad_m3: Capacidad (opcional)
-            estado: Estado operativo (opcional)
+            activo: Estado operativo (opcional)
             recurso_id_local: ID local (opcional para logging)
 
         Returns:
@@ -423,12 +420,12 @@ class ExternalSyncService:
             payload = {"perfil_id": perfil_id}
             if placa:
                 payload["placa"] = placa
+            if marca:
+                payload["marca"] = marca
             if modelo is not None:
                 payload["modelo"] = modelo
-            if capacidad_m3 is not None:
-                payload["capacidad_m3"] = capacidad_m3
-            if estado:
-                payload["estado"] = estado
+            if activo is not None:
+                payload["activo"] = activo
 
             logger.info(f"[SYNC] Actualizando vehículo {id_externo} en API externa")
             status_code, response = await self._hacer_request(
