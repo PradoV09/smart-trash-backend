@@ -366,9 +366,16 @@ class ExternalSyncService:
                 "perfil_id": perfil_id,
             }
 
-            logger.info(f"[SYNC] Creando vehículo {placa} en API externa")
+            logger.info(
+                f"[SYNC] Creando vehículo {placa} en API externa. "
+                f"URL: {self.api_base_url}/api/vehiculos | Payload: {payload}"
+            )
             status_code, response = await self._hacer_request(
                 "POST", "/api/vehiculos", json_payload=payload
+            )
+            logger.info(
+                f"[SYNC] Respuesta de API externa para {placa}: "
+                f"status={status_code}, body={response}"
             )
 
             # Extraer ID externo

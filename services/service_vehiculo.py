@@ -7,6 +7,7 @@ operativos (`disponible`, `en_ruta`, `mantenimiento`, etc.).
 """
 
 import logging
+import traceback
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -47,10 +48,22 @@ class VehiculoService:
         self.db.add(vehiculo)
         await self.db.flush()
 
-        # Sincronización robusta usando ExternalSyncService
+        # ====================================================================
+        # SINCRONIZACIÓN CON API EXTERNA
+        # Estrategia: intentar con ExternalSyncService primero (payload con
+        # campos activo/marca/modelo). Si falla, usar APIExternaService como
+        # fallback (payload con estado/placa/modelo/capacidad_m3/perfil_id).
+        # ====================================================================
+        sync_exitoso = False
         sync_service = get_external_sync_service()
+
         if sync_service.es_sincronizacion_habilitada():
+            # --- Intento 1: ExternalSyncService ---
             try:
+                logger.info(
+                    f"[SYNC] Intentando sincronizar vehículo {vehiculo.placa} "
+                    f"(id_local={vehiculo.id_vehiculo}) con ExternalSyncService..."
+                )
                 metadata = await sync_service.sync_create_vehiculo(
                     placa=vehiculo.placa,
                     marca=None,
@@ -60,17 +73,56 @@ class VehiculoService:
                 )
                 if metadata.estado == SyncStatus.SUCCESS:
                     vehiculo.id_externo = metadata.id_externo
+                    sync_exitoso = True
+                    logger.info(
+                        f"[SYNC ✅] Vehículo {vehiculo.placa} sincronizado exitosamente. "
+                        f"id_externo={metadata.id_externo}"
+                    )
                 else:
                     logger.warning(
-                        f"[SYNC] Vehículo {vehiculo.placa} creado localmente pero la API externa rechazó la sincronización: {metadata.error_message}"
+                        f"[SYNC ⚠️] ExternalSyncService falló para {vehiculo.placa}: "
+                        f"{metadata.error_message} (code={metadata.error_code})"
                     )
             except Exception as e:
                 logger.error(
-                    f"[SYNC ERROR] Error inesperado al intentar enviar vehículo {vehiculo.placa} a la API: {str(e)}"
+                    f"[SYNC ❌] ExternalSyncService excepción para {vehiculo.placa}: {e}\n"
+                    f"{traceback.format_exc()}"
+                )
+
+            # --- Intento 2 (fallback): APIExternaService ---
+            if not sync_exitoso:
+                try:
+                    logger.info(
+                        f"[SYNC FALLBACK] Intentando con APIExternaService para {vehiculo.placa}..."
+                    )
+                    api_ext = APIExternaService()
+                    ext_id, resp_json = await api_ext.crear_vehiculo_externo(
+                        placa=vehiculo.placa,
+                        modelo=vehiculo.modelo,
+                        capacidad_m3=vehiculo.capacidad_m3,
+                        estado=vehiculo.estado,
+                    )
+                    vehiculo.id_externo = ext_id
+                    sync_exitoso = True
+                    logger.info(
+                        f"[SYNC FALLBACK ✅] Vehículo {vehiculo.placa} sincronizado vía fallback. "
+                        f"id_externo={ext_id}, respuesta={resp_json}"
+                    )
+                except Exception as e2:
+                    logger.error(
+                        f"[SYNC FALLBACK ❌] APIExternaService también falló para {vehiculo.placa}: {e2}\n"
+                        f"{traceback.format_exc()}"
+                    )
+
+            if not sync_exitoso:
+                logger.error(
+                    f"[SYNC FINAL ❌] Vehículo {vehiculo.placa} creado en BD local "
+                    f"pero NO se pudo sincronizar con la API externa por ningún método."
                 )
         else:
             logger.info(
-                f"[SYNC] Sincronización deshabilitada para vehículo {vehiculo.placa}. Verifique RUTAS_API_URL y PERFIL_ID."
+                f"[SYNC SKIP] Sincronización deshabilitada para vehículo {vehiculo.placa}. "
+                f"Verifique RUTAS_API_URL y PERFIL_ID en .env"
             )
 
         await self.db.flush()
@@ -137,6 +189,9 @@ class VehiculoService:
         if vehiculo.id_externo:
             try:
                 sync_service = get_external_sync_service()
+                logger.info(
+                    f"[SYNC] Actualizando vehículo {id_vehiculo} (ext={vehiculo.id_externo}) en API externa..."
+                )
                 metadata = await sync_service.sync_update_vehiculo(
                     id_externo=vehiculo.id_externo,
                     placa=vehiculo.placa,
@@ -144,21 +199,28 @@ class VehiculoService:
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=id_vehiculo,
                 )
-                if metadata.estado != SyncStatus.SUCCESS:
+                if metadata.estado == SyncStatus.SUCCESS:
+                    logger.info(
+                        f"[SYNC ✅] Vehículo {id_vehiculo} actualizado en API externa."
+                    )
+                else:
                     logger.warning(
-                        "Vehículo %s actualizado en BD local pero sincronización falló: %s",
+                        "[SYNC ⚠️] Vehículo %s actualizado en BD local pero sincronización falló: %s",
                         id_vehiculo,
                         metadata.error_message,
                     )
             except Exception as e:
                 logger.warning(
-                    "Vehículo %s actualizado en BD local pero no se pudo sincronizar: %s",
+                    "[SYNC ❌] Vehículo %s actualizado en BD local pero no se pudo sincronizar: %s",
                     id_vehiculo,
                     str(e),
                 )
-        await self.db.commit()
+        else:
+            logger.info(
+                f"[SYNC SKIP] Vehículo {id_vehiculo} no tiene id_externo, no se sincroniza update."
+            )
 
-        await self.db.commit()
+        await self.db.flush()
         return await self.obtener_vehiculo_por_id(id_vehiculo)
 
     async def cambiar_estado_vehiculo(
@@ -197,6 +259,7 @@ class VehiculoService:
     async def eliminar_vehiculo(self, id_vehiculo: int) -> None:
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         id_externo = vehiculo.id_externo  # Guardar antes de eliminar
+        placa = vehiculo.placa
 
         await self.db.delete(vehiculo)
         try:
@@ -214,19 +277,30 @@ class VehiculoService:
         if id_externo:
             try:
                 sync_service = get_external_sync_service()
+                logger.info(
+                    f"[SYNC] Eliminando vehículo {placa} (ext={id_externo}) de API externa..."
+                )
                 metadata = await sync_service.sync_delete_vehiculo(
                     id_externo=id_externo,
                     recurso_id_local=id_vehiculo,
                 )
-                if metadata.estado != SyncStatus.SUCCESS:
+                if metadata.estado == SyncStatus.SUCCESS:
+                    logger.info(
+                        f"[SYNC ✅] Vehículo {placa} eliminado de API externa."
+                    )
+                else:
                     logger.warning(
-                        "Vehículo %s eliminado de BD local pero sincronización falló: %s",
+                        "[SYNC ⚠️] Vehículo %s eliminado de BD local pero sincronización falló: %s",
                         id_vehiculo,
                         metadata.error_message,
                     )
             except Exception as e:
                 logger.warning(
-                    "Vehículo %s eliminado de BD local pero no se pudo sincronizar eliminación: %s",
+                    "[SYNC ❌] Vehículo %s eliminado de BD local pero no se pudo sincronizar eliminación: %s",
                     id_vehiculo,
                     str(e),
                 )
+        else:
+            logger.info(
+                f"[SYNC SKIP] Vehículo {id_vehiculo} ({placa}) no tenía id_externo, no se sincroniza delete."
+            )
