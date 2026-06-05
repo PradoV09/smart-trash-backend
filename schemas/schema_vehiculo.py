@@ -72,6 +72,5 @@ class VehiculoResponse(BaseModel):
     capacidad_m3: Optional[float] = None
     estado:       EstadoVehiculo
     created_at:   datetime
-    datos_api_externo: Optional[dict] = None
 
     model_config =  ConfigDict(from_attributes=True)

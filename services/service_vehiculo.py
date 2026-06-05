@@ -93,20 +93,8 @@ class VehiculoService:
     async def obtener_todos_vehiculos(self) -> list[VehiculoResponse]:
         result = await self.db.execute(select(Vehiculo))
         locales = list(result.scalars().all())
-        externos: list[dict] = []
-        try:
-            externos = await APIExternaService().listar_vehiculos_externos()
-        except HTTPException:
-            pass
-        por_id: dict[str, dict] = {}
-        for item in externos:
-            eid = _id_desde_item_api(item)
-            if eid:
-                por_id[eid] = item
         salida: list[VehiculoResponse] = []
         for v in locales:
-            datos = por_id.get(v.id_externo) if v.id_externo else None
-            # No incluir marca en la respuesta (frontend no la usa)
             vehiculo_dict = {
                 "id_vehiculo": v.id_vehiculo,
                 "id_externo": v.id_externo,
@@ -115,7 +103,6 @@ class VehiculoService:
                 "capacidad_m3": v.capacidad_m3,
                 "estado": v.estado,
                 "created_at": v.created_at,
-                "datos_api_externo": datos,
             }
             base = VehiculoResponse(**vehiculo_dict)
             salida.append(base)
@@ -136,17 +123,6 @@ class VehiculoService:
 
     async def obtener_vehiculo_por_id(self, id_vehiculo: int) -> VehiculoResponse:
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
-        datos = None
-        if vehiculo.id_externo:
-            try:
-                externos = await APIExternaService().listar_vehiculos_externos()
-                for item in externos:
-                    if _id_desde_item_api(item) == vehiculo.id_externo:
-                        datos = item
-                        break
-            except HTTPException:
-                pass
-        # No incluir marca en la respuesta (frontend no la usa)
         vehiculo_dict = {
             "id_vehiculo": vehiculo.id_vehiculo,
             "id_externo": vehiculo.id_externo,
@@ -155,7 +131,6 @@ class VehiculoService:
             "capacidad_m3": vehiculo.capacidad_m3,
             "estado": vehiculo.estado,
             "created_at": vehiculo.created_at,
-            "datos_api_externo": datos,
         }
         return VehiculoResponse(**vehiculo_dict)
 
