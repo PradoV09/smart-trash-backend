@@ -53,9 +53,17 @@ class VehiculoService:
         # ====================================================================
         # ENVIAR VEHÍCULO NUEVO A API EXTERNA
         # ====================================================================
+        logger.info(f"[DEBUG] Iniciando sincronización para vehículo {vehiculo.placa}")
         sync_service = get_external_sync_service()
 
-        if sync_service.es_sincronizacion_habilitada():
+        logger.info(f"[DEBUG] sync_service creado: {sync_service}")
+        logger.info(f"[DEBUG] api_base_url: {sync_service.api_base_url}")
+        logger.info(f"[DEBUG] perfil_id: {sync_service.perfil_id}")
+
+        habilitada = sync_service.es_sincronizacion_habilitada()
+        logger.info(f"[DEBUG] es_sincronizacion_habilitada() = {habilitada}")
+
+        if habilitada:
             try:
                 logger.info(
                     f"[SYNC] Enviando vehículo {vehiculo.placa} a API externa..."
@@ -67,6 +75,7 @@ class VehiculoService:
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
                 )
+                logger.info(f"[DEBUG] metadata recibida: estado={metadata.estado}, id_externo={metadata.id_externo}")
                 if metadata.estado == SyncStatus.SUCCESS:
                     vehiculo.id_externo = metadata.id_externo
                     logger.info(
@@ -82,6 +91,7 @@ class VehiculoService:
                 logger.error(
                     f"[SYNC ❌] Error al enviar vehículo {vehiculo.placa} a API externa: {e}"
                 )
+                logger.error(f"[SYNC ❌] Traceback: {traceback.format_exc()}")
         else:
             logger.info(
                 f"[SYNC SKIP] Envío a API externa deshabilitado para vehículo {vehiculo.placa}."
