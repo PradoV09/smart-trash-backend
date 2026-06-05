@@ -53,19 +53,19 @@ class VehiculoService:
         # ====================================================================
         # ENVIAR VEHÍCULO NUEVO A API EXTERNA
         # ====================================================================
-        logger.info(f"[DEBUG] Iniciando sincronización para vehículo {vehiculo.placa}")
+        print(f"[DEBUG] Iniciando sincronización para vehículo {vehiculo.placa}")
         sync_service = get_external_sync_service()
 
-        logger.info(f"[DEBUG] sync_service creado: {sync_service}")
-        logger.info(f"[DEBUG] api_base_url: {sync_service.api_base_url}")
-        logger.info(f"[DEBUG] perfil_id: {sync_service.perfil_id}")
+        print(f"[DEBUG] sync_service creado: {sync_service}")
+        print(f"[DEBUG] api_base_url: {sync_service.api_base_url}")
+        print(f"[DEBUG] perfil_id: {sync_service.perfil_id}")
 
         habilitada = sync_service.es_sincronizacion_habilitada()
-        logger.info(f"[DEBUG] es_sincronizacion_habilitada() = {habilitada}")
+        print(f"[DEBUG] es_sincronizacion_habilitada() = {habilitada}")
 
         if habilitada:
             try:
-                logger.info(
+                print(
                     f"[SYNC] Enviando vehículo {vehiculo.placa} a API externa..."
                 )
                 metadata = await sync_service.sync_create_vehiculo(
@@ -75,25 +75,25 @@ class VehiculoService:
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
                 )
-                logger.info(f"[DEBUG] metadata recibida: estado={metadata.estado}, id_externo={metadata.id_externo}")
+                print(f"[DEBUG] metadata recibida: estado={metadata.estado}, id_externo={metadata.id_externo}")
                 if metadata.estado == SyncStatus.SUCCESS:
                     vehiculo.id_externo = metadata.id_externo
-                    logger.info(
+                    print(
                         f"[SYNC ✅] Vehículo {vehiculo.placa} enviado a API externa. "
                         f"id_externo={metadata.id_externo}"
                     )
                 else:
-                    logger.warning(
+                    print(
                         f"[SYNC ⚠️] Falló enviar vehículo {vehiculo.placa} a API externa: "
                         f"{metadata.error_message}"
                     )
             except Exception as e:
-                logger.error(
+                print(
                     f"[SYNC ❌] Error al enviar vehículo {vehiculo.placa} a API externa: {e}"
                 )
-                logger.error(f"[SYNC ❌] Traceback: {traceback.format_exc()}")
+                print(f"[SYNC ❌] Traceback: {traceback.format_exc()}")
         else:
-            logger.info(
+            print(
                 f"[SYNC SKIP] Envío a API externa deshabilitado para vehículo {vehiculo.placa}."
             )
 
