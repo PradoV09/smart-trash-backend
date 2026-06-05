@@ -16,15 +16,22 @@ from models.model_asignacionrutas import AsignacionRutas, EstadoAsignacion
 from models.model_asignaciontripulacion import TripulacionAsignacion
 from models.model_tripulacion import Tripulacion, TripulacionMiembro
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
-from models.model_asignacion_externa import AsignacionExterna, EstadoExterno, IntentoPosicion, EstadoIntento
+from models.model_asignacion_externa import (
+    AsignacionExterna,
+    EstadoExterno,
+    IntentoPosicion,
+    EstadoIntento,
+)
 from models.model_asignaciontripulacion import RolTripulacion
 from schemas.schema_asignacionrutas import AsignacionCreate
 from core.websocket_manager import ws_manager
 from services.service_api_externa import APIExternaService
+from services.external_sync_service import get_external_sync_service, SyncStatus
 from models.model_usuarios import Usuario
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class AsignacionService:
 
@@ -33,13 +40,16 @@ class AsignacionService:
 
     def _con_relaciones(self):
         """Crea una consulta base con `vehiculo` y `tripulacion` precargados."""
-        return (
-            select(AsignacionRutas)
-            .options(
-                selectinload(AsignacionRutas.vehiculo),
-                selectinload(AsignacionRutas.tripulacion).selectinload(Tripulacion.miembros).selectinload(TripulacionMiembro.usuario).selectinload(Usuario.perfil),
-                selectinload(AsignacionRutas.tripulacion).selectinload(Tripulacion.miembros).selectinload(TripulacionMiembro.usuario).selectinload(Usuario.rol),
-            )
+        return select(AsignacionRutas).options(
+            selectinload(AsignacionRutas.vehiculo),
+            selectinload(AsignacionRutas.tripulacion)
+            .selectinload(Tripulacion.miembros)
+            .selectinload(TripulacionMiembro.usuario)
+            .selectinload(Usuario.perfil),
+            selectinload(AsignacionRutas.tripulacion)
+            .selectinload(Tripulacion.miembros)
+            .selectinload(TripulacionMiembro.usuario)
+            .selectinload(Usuario.rol),
         )
 
     async def crear_asignacion(self, data: AsignacionCreate) -> AsignacionRutas:
@@ -52,8 +62,10 @@ class AsignacionService:
             ruta_valida = True
         except HTTPException as e:
             if e.status_code == 404:
-                raise HTTPException(status_code=400, detail=f"Ruta {data.id_ruta} no encontrada.")
-            
+                raise HTTPException(
+                    status_code=400, detail=f"Ruta {data.id_ruta} no encontrada."
+                )
+
             # Fallback: Intentar buscar en la lista completa si el fetch individual falla (500 o similar)
             try:
                 resp = await api_service.listar_rutas()
@@ -65,19 +77,24 @@ class AsignacionService:
                 # para no bloquear al usuario si la API es inestable, podríamos dejarlo pasar
                 # pero es mejor ser estrictos o registrar el error.
                 pass
-            
+
             if not ruta_valida:
-                raise e # Re-lanzar el error original si el fallback también falló o no encontró la ruta
+                raise e  # Re-lanzar el error original si el fallback también falló o no encontró la ruta
 
         # 2. Validar Vehículo
-        res_v = await self.db.execute(select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo))
+        res_v = await self.db.execute(
+            select(Vehiculo).where(Vehiculo.id_vehiculo == data.id_vehiculo)
+        )
         vehiculo = res_v.scalar_one_or_none()
         if not vehiculo or vehiculo.estado != EstadoVehiculo.disponible:
             raise HTTPException(status_code=400, detail="Vehículo no disponible.")
 
         # 3. Validar Tripulación (Nuevo)
         from models.model_tripulacion import Tripulacion
-        res_t = await self.db.execute(select(Tripulacion).where(Tripulacion.id_tripulacion == data.id_tripulacion))
+
+        res_t = await self.db.execute(
+            select(Tripulacion).where(Tripulacion.id_tripulacion == data.id_tripulacion)
+        )
         if not res_t.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Tripulación no encontrada.")
 
@@ -91,10 +108,13 @@ class AsignacionService:
         asignaciones = result.scalars().all()
         return await self._enriquecer_con_rutas(asignaciones)
 
-    async def obtener_asignaciones_por_usuario(self, id_usuario: int) -> list[AsignacionRutas]:
+    async def obtener_asignaciones_por_usuario(
+        self, id_usuario: int
+    ) -> list[AsignacionRutas]:
         from datetime import datetime, timezone
+
         hoy = datetime.now(timezone.utc).date()
-        
+
         result = await self.db.execute(
             self._con_relaciones()
             .join(AsignacionRutas.tripulacion)
@@ -108,25 +128,21 @@ class AsignacionService:
     async def listar_asignaciones_en_curso_publico(self) -> list[AsignacionRutas]:
         """Obtiene todas las asignaciones actualmente en curso con sus detalles."""
         from sqlalchemy import cast, String
-        
+
         # Consulta robusta con relaciones precargadas
         result = await self.db.execute(
             select(AsignacionRutas)
             .options(selectinload(AsignacionRutas.vehiculo))
-            .where(
-                cast(AsignacionRutas.estado, String).ilike('en_curso')
-            )
+            .where(cast(AsignacionRutas.estado, String).ilike("en_curso"))
         )
         asignaciones = result.scalars().all()
-        
+
         # Enriquecer con datos de la ruta externa (shapes, nombres, etc)
         return await self._enriquecer_con_rutas(list(asignaciones))
 
     async def obtener_asignacion_id(self, id_asignacion: int) -> AsignacionRutas:
         result = await self.db.execute(
-            self._con_relaciones().where(
-                AsignacionRutas.id_asignacion == id_asignacion
-            )
+            self._con_relaciones().where(AsignacionRutas.id_asignacion == id_asignacion)
         )
         asignacion = result.scalar_one_or_none()
         if not asignacion:
@@ -139,13 +155,13 @@ class AsignacionService:
 
     async def obtener_asignacion_ruta(self, id_ruta: str) -> AsignacionRutas | None:
         result = await self.db.execute(
-            self._con_relaciones().where(
-                AsignacionRutas.id_ruta == id_ruta
-            )
+            self._con_relaciones().where(AsignacionRutas.id_ruta == id_ruta)
         )
         return result.scalar_one_or_none()
 
-    async def verificar_asignacion_pendiente(self, id_asignacion: int) -> AsignacionRutas:
+    async def verificar_asignacion_pendiente(
+        self, id_asignacion: int
+    ) -> AsignacionRutas:
         result = await self.db.execute(
             select(AsignacionRutas).where(
                 AsignacionRutas.id_asignacion == id_asignacion
@@ -166,7 +182,7 @@ class AsignacionService:
 
     async def iniciar_recorrido(self, id_asignacion: int) -> AsignacionRutas:
         """Inicia el recorrido una vez que toda la tripulación ha confirmado."""
-        asignacion = await self.obtener_asignacion_id(id_asignacion) 
+        asignacion = await self.obtener_asignacion_id(id_asignacion)
         if asignacion.estado != EstadoAsignacion.pendiente:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -175,15 +191,18 @@ class AsignacionService:
 
         # Regla de Negocio: Validar estructura obligatoria (1 conductor + 3 recolectores)
         from services.service_asignaciontripulacion import TripulacionService
+
         trip_service = TripulacionService(self.db)
         if not await trip_service.validar_tripulacion(id_asignacion):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"No se puede iniciar la asignación {id_asignacion}: la tripulación no cumple "
-                       "la estructura reglamentaria obligatoria (1 conductor y 3 recolectores)."
+                "la estructura reglamentaria obligatoria (1 conductor y 3 recolectores).",
             )
 
-        no_confirmados = [t for t in asignacion.tripulacion.miembros if not t.confirmado]
+        no_confirmados = [
+            t for t in asignacion.tripulacion.miembros if not t.confirmado
+        ]
         if no_confirmados:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -194,38 +213,53 @@ class AsignacionService:
         ids_usuarios = [m.id_usuario for m in asignacion.tripulacion.miembros]
         query_activa = (
             select(Usuario)
-            .join(TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario)
-            .join(Tripulacion, Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion)
-            .join(AsignacionRutas, AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion)
+            .join(
+                TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario
+            )
+            .join(
+                Tripulacion,
+                Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion,
+            )
+            .join(
+                AsignacionRutas,
+                AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion,
+            )
             .where(
                 Usuario.id_usuario.in_(ids_usuarios),
                 AsignacionRutas.estado == EstadoAsignacion.en_curso,
-                AsignacionRutas.id_asignacion != id_asignacion
+                AsignacionRutas.id_asignacion != id_asignacion,
             )
             .options(selectinload(Usuario.perfil))
         )
         res_activa = await self.db.execute(query_activa)
         usuario_ocupado = res_activa.scalar_one_or_none()
-        
+
         if usuario_ocupado:
-            nombre = usuario_ocupado.perfil.nombre if usuario_ocupado.perfil else f"ID {usuario_ocupado.id_usuario}"
+            nombre = (
+                usuario_ocupado.perfil.nombre
+                if usuario_ocupado.perfil
+                else f"ID {usuario_ocupado.id_usuario}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo."
+                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo.",
             )
         # Una vez iniciada, la asignación cambia a `en_curso` y el vehículo queda `en_ruta`.
-        asignacion.estado          = EstadoAsignacion.en_curso
-        asignacion.hora_salida     = datetime.now(timezone.utc)
+        asignacion.estado = EstadoAsignacion.en_curso
+        asignacion.hora_salida = datetime.now(timezone.utc)
         asignacion.vehiculo.estado = EstadoVehiculo.en_ruta
         await self.db.flush()
 
         # Se notifica a los clientes suscritos mediante WebSocket.
-        await ws_manager.broadcast(id_asignacion, {
-            "evento":        "recorrido_iniciado",
-            "id_asignacion": id_asignacion,
-            "hora_salida":   asignacion.hora_salida.isoformat(),
-            "estado":        asignacion.estado.value,
-        })
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "recorrido_iniciado",
+                "id_asignacion": id_asignacion,
+                "hora_salida": asignacion.hora_salida.isoformat(),
+                "estado": asignacion.estado.value,
+            },
+        )
         return asignacion
 
     async def finalizar_recorrido(self, id_asignacion: int) -> AsignacionRutas:
@@ -236,34 +270,40 @@ class AsignacionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"La asignación {id_asignacion} no se puede finalizar porque su estado actual es '{asignacion.estado.value}'.",
             )
-        asignacion.estado          = EstadoAsignacion.completada
+        asignacion.estado = EstadoAsignacion.completada
         asignacion.vehiculo.estado = EstadoVehiculo.disponible
         await self.db.flush()
 
-        await ws_manager.broadcast(id_asignacion, {
-            "evento":        "recorrido_finalizado",
-            "id_asignacion": id_asignacion,
-            "estado":        asignacion.estado.value,
-        })
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "recorrido_finalizado",
+                "id_asignacion": id_asignacion,
+                "estado": asignacion.estado.value,
+            },
+        )
         return asignacion
 
     async def cancelar_asignacion(self, id_asignacion: int) -> AsignacionRutas:
         """Cancela una asignación no completada y libera su vehículo."""
-        asignacion = await self.obtener_asignacion_id(id_asignacion) 
+        asignacion = await self.obtener_asignacion_id(id_asignacion)
         if asignacion.estado == EstadoAsignacion.completada:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"No se puede cancelar la asignación {id_asignacion} porque ya fue completada.",
             )
-        asignacion.estado          = EstadoAsignacion.cancelada
+        asignacion.estado = EstadoAsignacion.cancelada
         asignacion.vehiculo.estado = EstadoVehiculo.disponible
         await self.db.flush()
 
-        await ws_manager.broadcast(id_asignacion, {
-            "evento":        "asignacion_cancelada",
-            "id_asignacion": id_asignacion,
-            "estado":        asignacion.estado.value,
-        })
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "asignacion_cancelada",
+                "id_asignacion": id_asignacion,
+                "estado": asignacion.estado.value,
+            },
+        )
         return asignacion
 
     async def obtener_detalles_ruta(self, id_ruta: str) -> dict | None:
@@ -289,42 +329,40 @@ class AsignacionService:
 
     async def validar_tripulacion_con_piloto(self, id_asignacion: int) -> bool:
         """Valida que la tripulación tenga al menos un conductor (piloto).
-        
+
         Returns:
             bool: True si hay al menos un piloto en la tripulación
-            
+
         Raises:
             HTTPException: 400 si no hay piloto
         """
         asignacion = await self.obtener_asignacion_id(id_asignacion)
-        
+
         if not asignacion.tripulacion:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="La asignación no tiene tripulación asignada."
+                detail="La asignación no tiene tripulación asignada.",
             )
-        
+
         # Buscar miembro con rol de conductor
         tiene_conductor = any(
-            miembro.rol_tripulacion == RolTripulacion.conductor 
+            miembro.rol_tripulacion == RolTripulacion.conductor
             for miembro in asignacion.tripulacion.miembros
         )
-        
+
         if not tiene_conductor:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="La tripulación debe tener al menos 1 conductor."
+                detail="La tripulación debe tener al menos 1 conductor.",
             )
-        
+
         return True
 
     async def iniciar_recorrido_con_api_externa(
-        self, 
-        id_asignacion: int,
-        perfil_id: str | None = None
+        self, id_asignacion: int, perfil_id: str | None = None
     ) -> AsignacionRutas:
         """Inicia el recorrido integrando con la API externa.
-        
+
         Flujo:
         1. Valida que la asignación esté en estado pendiente
         2. Valida que la tripulación tenga piloto
@@ -335,69 +373,89 @@ class AsignacionService:
         7. Notifica por WebSocket
         """
         logger.info(f"Iniciando recorrido para asignación {id_asignacion}")
-        
+
         # 1. Validar estado de asignación
         asignacion = await self.obtener_asignacion_id(id_asignacion)
         if asignacion.estado != EstadoAsignacion.pendiente:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"La asignación {id_asignacion} no está en estado pendiente. "
-                       f"Estado actual: {asignacion.estado.value}"
+                f"Estado actual: {asignacion.estado.value}",
             )
-        
+
         # 2. Validar que tenga piloto
         await self.validar_tripulacion_con_piloto(id_asignacion)
-        
+
         # 3. Validar que el vehículo no tenga otro recorrido activo
         if asignacion.vehiculo.estado == EstadoVehiculo.en_ruta:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"El vehículo {asignacion.vehiculo.id_vehiculo} ya tiene un recorrido activo."
+                detail=f"El vehículo {asignacion.vehiculo.id_vehiculo} ya tiene un recorrido activo.",
             )
-            
+
         # 3b. Validar que ningún miembro de la tripulación tenga otro recorrido activo
         ids_usuarios = [m.id_usuario for m in asignacion.tripulacion.miembros]
         query_activa = (
             select(Usuario)
-            .join(TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario)
-            .join(Tripulacion, Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion)
-            .join(AsignacionRutas, AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion)
+            .join(
+                TripulacionMiembro, TripulacionMiembro.id_usuario == Usuario.id_usuario
+            )
+            .join(
+                Tripulacion,
+                Tripulacion.id_tripulacion == TripulacionMiembro.id_tripulacion,
+            )
+            .join(
+                AsignacionRutas,
+                AsignacionRutas.id_tripulacion == Tripulacion.id_tripulacion,
+            )
             .where(
                 Usuario.id_usuario.in_(ids_usuarios),
                 AsignacionRutas.estado == EstadoAsignacion.en_curso,
-                AsignacionRutas.id_asignacion != id_asignacion
+                AsignacionRutas.id_asignacion != id_asignacion,
             )
             .options(selectinload(Usuario.perfil))
         )
         res_activa = await self.db.execute(query_activa)
         usuario_ocupado = res_activa.scalar_one_or_none()
-        
+
         if usuario_ocupado:
-            nombre = usuario_ocupado.perfil.nombre if usuario_ocupado.perfil else f"ID {usuario_ocupado.id_usuario}"
+            nombre = (
+                usuario_ocupado.perfil.nombre
+                if usuario_ocupado.perfil
+                else f"ID {usuario_ocupado.id_usuario}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo."
+                detail=f"El tripulante {nombre} ya tiene otro recorrido en curso. Debe finalizarlo antes de iniciar uno nuevo.",
             )
-        
-        # 4. Llamar a la API externa (con tolerancia a fallos para desarrollo local)
-        api_service = APIExternaService()
-        recorrido_externo_id = f"local_{id_asignacion}" # Valor por defecto
-        
-        # Debug: Log values being sent to external API
-        logger.info(f"Enviando a API externa - ruta_id: {asignacion.id_ruta}, vehiculo_id: {asignacion.vehiculo.id_externo}, perfil_id: {perfil_id}")
-        
-        try:
-            response = await api_service.iniciar_recorrido_externo(
-                ruta_id=asignacion.id_ruta,
-                vehiculo_id=asignacion.vehiculo.id_externo,
-                perfil_id=perfil_id
+
+        # 4. Llamar a la API externa mediante el servicio de sincronización
+        recorrido_externo_id = f"local_{id_asignacion}"  # Valor por defecto
+
+        sync_service = get_external_sync_service()
+        if sync_service.es_sincronizacion_habilitada():
+            try:
+                metadata = await sync_service.sync_create_asignacion(
+                    ruta_id=asignacion.id_ruta,
+                    vehiculo_id=asignacion.vehiculo.id_externo,
+                    perfil_id=perfil_id,
+                    recurso_id_local=id_asignacion,
+                )
+                if metadata.estado == SyncStatus.SUCCESS:
+                    recorrido_externo_id = metadata.id_externo
+                else:
+                    logger.warning(
+                        f"[SYNC] Error al sincronizar inicio de recorrido: {metadata.error_message}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"⚠️ Error inesperado sincronizando con API externa: {str(e)}"
+                )
+        else:
+            logger.info(
+                "[SYNC] Sincronización deshabilitada. Usando ID local para recorrido externo."
             )
-            recorrido_externo_id = response.get("id") or response.get("recorrido_id") or recorrido_externo_id
-            logger.info(f"Respuesta de API externa: {response}")
-        except Exception as e:
-            logger.warning(f"⚠️ No se pudo sincronizar con API externa (Modo Local activo): {str(e)}")
-            # En local, permitimos continuar aunque la API externa falle
-        
+
         # 5. Guardar referencia externa (UPSERT)
         existing = await self.db.execute(
             select(AsignacionExterna).where(
@@ -405,7 +463,7 @@ class AsignacionService:
             )
         )
         existing_record = existing.scalar_one_or_none()
-        
+
         if existing_record:
             # Actualizar registro existente
             existing_record.recorrido_externo_id = str(recorrido_externo_id)
@@ -417,34 +475,39 @@ class AsignacionService:
                 id_asignacion=id_asignacion,
                 recorrido_externo_id=str(recorrido_externo_id),
                 estado_externo=EstadoExterno.sincronizado,
-                ultima_sincro=datetime.now(timezone.utc)
+                ultima_sincro=datetime.now(timezone.utc),
             )
             self.db.add(asignacion_externa)
-        
+
         # 6. Cambiar estado a en_curso
         asignacion.estado = EstadoAsignacion.en_curso
         asignacion.hora_salida = datetime.now(timezone.utc)
         asignacion.vehiculo.estado = EstadoVehiculo.en_ruta
-        
+
         await self.db.flush()
-        
+
         # 7. Notificar por WebSocket
-        await ws_manager.broadcast(id_asignacion, {
-            "evento": "recorrido_iniciado",
-            "id_asignacion": id_asignacion,
-            "recorrido_externo_id": recorrido_externo_id,
-            "hora_salida": asignacion.hora_salida.isoformat(),
-            "estado": asignacion.estado.value,
-        })
-        
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "recorrido_iniciado",
+                "id_asignacion": id_asignacion,
+                "recorrido_externo_id": recorrido_externo_id,
+                "hora_salida": asignacion.hora_salida.isoformat(),
+                "estado": asignacion.estado.value,
+            },
+        )
+
         logger.info(f"Recorrido iniciado exitosamente: {recorrido_externo_id}")
         return await self.obtener_asignacion_id(id_asignacion)
 
-    async def _enriquecer_con_rutas(self, asignaciones: list[AsignacionRutas]) -> list[AsignacionRutas]:
+    async def _enriquecer_con_rutas(
+        self, asignaciones: list[AsignacionRutas]
+    ) -> list[AsignacionRutas]:
         """Consulta la API externa para traer los nombres y shapes de las rutas y adjuntarlos."""
         if not asignaciones:
             return []
-            
+
         api_service = APIExternaService()
         try:
             # Traer todas las rutas del perfil una sola vez para optimizar
@@ -453,30 +516,28 @@ class AsignacionService:
             rutas_list = resp.get("data", []) if isinstance(resp, dict) else resp
             if not isinstance(rutas_list, list):
                 rutas_list = []
-                
+
             rutas_map = {str(r.get("id")): r for r in rutas_list}
-            
+
             for asig in asignaciones:
                 # Adjuntamos el objeto ruta dinámicamente al objeto SQLAlchemy
                 # Pydantic lo leerá gracias a `from_attributes=True` en el esquema
                 asig.ruta = rutas_map.get(str(asig.id_ruta))
-                
+
         except Exception as e:
             logger.error(f"Error al enriquecer asignaciones con rutas: {str(e)}")
             # No lanzamos excepción para no romper el flujo principal si la API de rutas falla
             for asig in asignaciones:
-                if not hasattr(asig, 'ruta'):
+                if not hasattr(asig, "ruta"):
                     asig.ruta = None
-                    
+
         return asignaciones
 
     async def finalizar_recorrido_con_api_externa(
-        self, 
-        id_asignacion: int,
-        perfil_id: str | None = None
+        self, id_asignacion: int, perfil_id: str | None = None
     ) -> AsignacionRutas:
         """Finaliza el recorrido integrando con la API externa.
-        
+
         Flujo:
         1. Valida que la asignación esté en estado 'en_curso'
         2. Valida que no exceda 24 horas desde el inicio
@@ -486,25 +547,25 @@ class AsignacionService:
         6. Notifica por WebSocket
         """
         logger.info(f"Finalizando recorrido para asignación {id_asignacion}")
-        
+
         # 1. Validar estado
         asignacion = await self.obtener_asignacion_id(id_asignacion)
         if asignacion.estado != EstadoAsignacion.en_curso:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"La asignación {id_asignacion} no está en curso. "
-                       f"Estado actual: {asignacion.estado.value}"
+                f"Estado actual: {asignacion.estado.value}",
             )
-        
+
         # 2. Validar que no exceda 24 horas
         if asignacion.hora_salida:
             tiempo_transcurrido = datetime.now(timezone.utc) - asignacion.hora_salida
             if tiempo_transcurrido > timedelta(hours=24):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="No se puede finalizar el recorrido: ha excedido las 24 horas permitidas."
+                    detail="No se puede finalizar el recorrido: ha excedido las 24 horas permitidas.",
                 )
-        
+
         # Obtener referencia externa
         result_ext = await self.db.execute(
             select(AsignacionExterna).where(
@@ -512,43 +573,52 @@ class AsignacionService:
             )
         )
         asignacion_externa = result_ext.scalar_one_or_none()
-        
+
         if not asignacion_externa or not asignacion_externa.recorrido_externo_id:
-            logger.warning(f"No se encontró referencia externa para asignación {id_asignacion}")
+            logger.warning(
+                f"No se encontró referencia externa para asignación {id_asignacion}"
+            )
             # Finalizar localmente sin API externa
             return await self._finalizar_recorrido_local(asignacion)
-        
-        # 3. Llamar a la API externa
-        api_service = APIExternaService()
-        try:
-            await api_service.finalizar_recorrido_externo(
-                recorrido_externo_id=asignacion_externa.recorrido_externo_id,
-                perfil_id=perfil_id
-            )
-            
-            # Actualizar estado externo
-            asignacion_externa.estado_externo = EstadoExterno.sincronizado
-            asignacion_externa.ultima_sincro = datetime.now(timezone.utc)
-            
-        except HTTPException as e:
-            logger.error(f"Error al finalizar en API externa: {e.detail}")
-            
-            # Registrar intento fallido
-            from models.model_asignacion_externa import IntentoPosicion, EstadoIntento
-            intento = IntentoPosicion(
-                id_asignacion=id_asignacion,
-                payload='{"accion": "finalizar", "recorrido_externo_id": "' + 
-                        asignacion_externa.recorrido_externo_id + '"}',
-                estado=EstadoIntento.fallido,
-                error_msg=e.detail,
-                retry_count=1
-            )
-            self.db.add(intento)
-            await self.db.flush()
-            
-            # Finalizar localmente aunque la API externa haya fallado
-            logger.info("Finalizando localmente tras error de API externa")
-        
+
+        # 3. Llamar a la API externa mediante el servicio de sincronización
+        sync_service = get_external_sync_service()
+        if sync_service.es_sincronizacion_habilitada():
+            try:
+                metadata = await sync_service.sync_finalizar_asignacion(
+                    recorrido_externo_id=asignacion_externa.recorrido_externo_id,
+                    perfil_id=perfil_id,
+                    recurso_id_local=id_asignacion,
+                )
+
+                if metadata.estado == SyncStatus.SUCCESS:
+                    # Actualizar estado externo
+                    asignacion_externa.estado_externo = EstadoExterno.sincronizado
+                    asignacion_externa.ultima_sincro = datetime.now(timezone.utc)
+                else:
+                    logger.error(
+                        f"[SYNC] Error al finalizar en API externa: {metadata.error_message}"
+                    )
+                    # Registrar intento fallido
+                    from models.model_asignacion_externa import (
+                        IntentoPosicion,
+                        EstadoIntento,
+                    )
+
+                    intento = IntentoPosicion(
+                        id_asignacion=id_asignacion,
+                        payload=f'{{"accion": "finalizar", "recorrido_externo_id": "{asignacion_externa.recorrido_externo_id}"}}',
+                        estado=EstadoIntento.fallido,
+                        error_msg=metadata.error_message,
+                        retry_count=1,
+                    )
+                    self.db.add(intento)
+                    await self.db.flush()
+            except Exception as e:
+                logger.error(f"[SYNC] Error inesperado finalizando recorrido: {str(e)}")
+        else:
+            logger.info("[SYNC] Sincronización deshabilitada.")
+
         # 4. Cambiar estado a completada
         return await self._finalizar_recorrido_local(asignacion)
 
@@ -557,64 +627,81 @@ class AsignacionService:
         try:
             # Buscar la asignación con sus relaciones
             result = await self.db.execute(
-                self._con_relaciones().where(AsignacionRutas.id_asignacion == id_asignacion)
+                self._con_relaciones().where(
+                    AsignacionRutas.id_asignacion == id_asignacion
+                )
             )
             asignacion = result.scalar_one_or_none()
-            
+
             if not asignacion:
                 logger.warning(f"[PERMISO] Asignación {id_asignacion} no encontrada")
                 return False
-            
+
             # Convertir user_id a entero si viene como string
             try:
                 user_id_int = int(user_id)
             except (ValueError, TypeError):
                 logger.warning(f"[PERMISO] user_id inválido: {user_id}")
                 return False
-            
+
             # Verificar si el usuario es administrador (rol 1)
             result_user = await self.db.execute(
                 select(Usuario).where(Usuario.id_usuario == user_id_int)
             )
             usuario = result_user.scalar_one_or_none()
-            
+
             if usuario and usuario.id_rol == 1:  # Admin
-                logger.info(f"[PERMISO] Usuario {user_id} es administrador, acceso permitido")
+                logger.info(
+                    f"[PERMISO] Usuario {user_id} es administrador, acceso permitido"
+                )
                 return True
-            
+
             # Verificar si el usuario está en la tripulación de la asignación
             if asignacion.tripulacion:
                 for miembro in asignacion.tripulacion.miembros:
                     if miembro.id_usuario == user_id_int:
-                        logger.info(f"[PERMISO] Usuario {user_id} encontrado en tripulación de asignación {id_asignacion}")
+                        logger.info(
+                            f"[PERMISO] Usuario {user_id} encontrado en tripulación de asignación {id_asignacion}"
+                        )
                         return True
-            
+
             # Verificar si el usuario es el conductor del vehículo asignado
             if asignacion.vehiculo and asignacion.vehiculo.id_conductor == user_id_int:
-                logger.info(f"[PERMISO] Usuario {user_id} es conductor del vehículo de asignación {id_asignacion}")
+                logger.info(
+                    f"[PERMISO] Usuario {user_id} es conductor del vehículo de asignación {id_asignacion}"
+                )
                 return True
-            
-            logger.warning(f"[PERMISO] Usuario {user_id} no tiene permiso para asignación {id_asignacion}")
-            return False
-            
-        except Exception as e:
-            logger.error(f"[PERMISO] Error verificando permisos para usuario {user_id}, asignación {id_asignacion}: {e}")
+
+            logger.warning(
+                f"[PERMISO] Usuario {user_id} no tiene permiso para asignación {id_asignacion}"
+            )
             return False
 
-    async def _finalizar_recorrido_local(self, asignacion: AsignacionRutas) -> AsignacionRutas:
+        except Exception as e:
+            logger.error(
+                f"[PERMISO] Error verificando permisos para usuario {user_id}, asignación {id_asignacion}: {e}"
+            )
+            return False
+
+    async def _finalizar_recorrido_local(
+        self, asignacion: AsignacionRutas
+    ) -> AsignacionRutas:
         """Finaliza el recorrido a nivel local (sin API externa)."""
         id_asignacion = asignacion.id_asignacion
-        
+
         asignacion.estado = EstadoAsignacion.completada
         asignacion.vehiculo.estado = EstadoVehiculo.disponible
         await self.db.flush()
-        
+
         # Notificar por WebSocket
-        await ws_manager.broadcast(id_asignacion, {
-            "evento": "recorrido_finalizado",
-            "id_asignacion": id_asignacion,
-            "estado": asignacion.estado.value,
-        })
-        
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "recorrido_finalizado",
+                "id_asignacion": id_asignacion,
+                "estado": asignacion.estado.value,
+            },
+        )
+
         logger.info(f"Recorrido {id_asignacion} finalizado exitosamente")
         return await self.obtener_asignacion_id(id_asignacion)
