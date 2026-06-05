@@ -698,6 +698,7 @@ class ExternalSyncService:
     @staticmethod
     def _extract_vehiculo_id(data: dict[str, Any]) -> str:
         """Extrae el ID de un vehículo desde respuesta de API."""
+        print(f"[DEBUG _extract_vehiculo_id] Recibiendo data: {data}")
         # Intentar en la raíz y dentro de un posible objeto 'data' o 'vehiculo'
         fuentes = [data]
 
@@ -712,12 +713,15 @@ class ExternalSyncService:
         if isinstance(data.get("vehiculo"), dict):
             fuentes.append(data["vehiculo"])
 
+        print(f"[DEBUG _extract_vehiculo_id] Fuentes a buscar: {fuentes}")
         for fuente in fuentes:
             for key in ("id", "vehiculo_id", "id_vehiculo", "uuid"):
                 v = fuente.get(key)
                 if v is not None:
+                    print(f"[DEBUG _extract_vehiculo_id] Encontrado ID: {v} en clave {key}")
                     return str(v)
 
+        print(f"[DEBUG _extract_vehiculo_id] No se encontró ID, lanzando excepción")
         raise ExternalSync5xxException(
             f"API externa no devolvió identificador de vehículo reconocible. Respuesta: {data}"
         )
