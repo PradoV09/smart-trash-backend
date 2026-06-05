@@ -14,3 +14,4 @@ router.get("/{id_vehiculo}",          response_model=SuccessResponse[VehiculoRes
 router.patch("/{id_vehiculo}",        response_model=SuccessResponse[VehiculoResponse])(controller_vehiculo.actualizar_vehiculo)
 router.patch("/{id_vehiculo}/estado", response_model=SuccessResponse[VehiculoResponse])(controller_vehiculo.cambiar_estado_vehiculo)
 router.delete("/{id_vehiculo}",       response_model=SuccessResponse[dict[str, int]])(controller_vehiculo.eliminar_vehiculo)
+router.post("/sincronizar",           response_model=SuccessResponse[dict[str, int]])(controller_vehiculo.sincronizar_vehiculos_desde_api_externa)
