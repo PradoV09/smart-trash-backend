@@ -144,8 +144,20 @@ class VehiculoService:
         salida: list[VehiculoResponse] = []
         for v in locales:
             datos = por_id.get(v.id_externo) if v.id_externo else None
-            base = VehiculoResponse.model_validate(v)
-            salida.append(base.model_copy(update={"datos_api_externo": datos}))
+            # Manejar vehículos que no tienen el campo marca (registros antiguos)
+            vehiculo_dict = {
+                "id_vehiculo": v.id_vehiculo,
+                "id_externo": v.id_externo,
+                "placa": v.placa,
+                "marca": getattr(v, 'marca', None),
+                "modelo": v.modelo,
+                "capacidad_m3": v.capacidad_m3,
+                "estado": v.estado,
+                "created_at": v.created_at,
+                "datos_api_externo": datos,
+            }
+            base = VehiculoResponse(**vehiculo_dict)
+            salida.append(base)
         return salida
 
     async def _obtener_vehiculo_orm(self, id_vehiculo: int) -> Vehiculo:
@@ -173,8 +185,19 @@ class VehiculoService:
                         break
             except HTTPException:
                 pass
-        base = VehiculoResponse.model_validate(vehiculo)
-        return base.model_copy(update={"datos_api_externo": datos})
+        # Manejar vehículos que no tienen el campo marca (registros antiguos)
+        vehiculo_dict = {
+            "id_vehiculo": vehiculo.id_vehiculo,
+            "id_externo": vehiculo.id_externo,
+            "placa": vehiculo.placa,
+            "marca": getattr(vehiculo, 'marca', None),
+            "modelo": vehiculo.modelo,
+            "capacidad_m3": vehiculo.capacidad_m3,
+            "estado": vehiculo.estado,
+            "created_at": vehiculo.created_at,
+            "datos_api_externo": datos,
+        }
+        return VehiculoResponse(**vehiculo_dict)
 
     async def actualizar_vehiculo_por_id(
         self, id_vehiculo: int, data: VehiculoUpdate
