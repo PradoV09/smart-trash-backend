@@ -250,6 +250,14 @@ class AsignacionService:
         asignacion.vehiculo.estado = EstadoVehiculo.en_ruta
         await self.db.flush()
 
+        # Intentar sincronización automática si está habilitada
+        sync_service = get_external_sync_service()
+        if sync_service.es_sincronizacion_habilitada() and asignacion.vehiculo.id_externo:
+            try:
+                await self.iniciar_recorrido_con_api_externa(id_asignacion)
+            except Exception as e:
+                logger.warning(f"[SYNC] No se pudo sincronizar inicio automáticamente: {str(e)}")
+
         # Se notifica a los clientes suscritos mediante WebSocket.
         await ws_manager.broadcast(
             id_asignacion,

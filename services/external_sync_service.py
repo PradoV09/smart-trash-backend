@@ -683,29 +683,38 @@ class ExternalSyncService:
     @staticmethod
     def _extract_vehiculo_id(data: dict[str, Any]) -> str:
         """Extrae el ID de un vehículo desde respuesta de API."""
-        for key in ("id", "vehiculo_id", "id_vehiculo", "uuid"):
-            v = data.get(key)
-            if v is not None:
-                return str(v)
+        # Intentar en la raíz y dentro de un posible objeto 'data' o 'vehiculo'
+        fuentes = [data]
+        if isinstance(data.get("data"), dict):
+            fuentes.append(data["data"])
+        if isinstance(data.get("vehiculo"), dict):
+            fuentes.append(data["vehiculo"])
 
-        nested = data.get("vehiculo")
-        if isinstance(nested, dict) and nested.get("id"):
-            return str(nested["id"])
+        for fuente in fuentes:
+            for key in ("id", "vehiculo_id", "id_vehiculo", "uuid"):
+                v = fuente.get(key)
+                if v is not None:
+                    return str(v)
 
         raise ExternalSync5xxException(
-            "API externa no devolvió identificador de vehículo reconocible"
+            f"API externa no devolvió identificador de vehículo reconocible. Respuesta: {data}"
         )
 
     @staticmethod
     def _extract_recorrido_id(data: dict[str, Any]) -> str:
         """Extrae el ID de un recorrido desde respuesta de API."""
-        for key in ("id", "recorrido_id", "id_recorrido", "uuid"):
-            v = data.get(key)
-            if v is not None:
-                return str(v)
+        fuentes = [data]
+        if isinstance(data.get("data"), dict):
+            fuentes.append(data["data"])
+
+        for fuente in fuentes:
+            for key in ("id", "recorrido_id", "id_recorrido", "uuid"):
+                v = fuente.get(key)
+                if v is not None:
+                    return str(v)
 
         raise ExternalSync5xxException(
-            "API externa no devolvió identificador de recorrido reconocible"
+            f"API externa no devolvió identificador de recorrido reconocible. Respuesta: {data}"
         )
 
     def es_sincronizacion_habilitada(self) -> bool:
