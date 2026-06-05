@@ -31,15 +31,13 @@ logger = logging.getLogger(__name__)
 
 class PosicionesService:
     """Servicio para gestionar posiciones GPS."""
-    
+
     def __init__(self, db: AsyncSession):
         self.db = db
         self._config = get_app_config()
 
     async def _validar_asignacion_en_curso(
-        self,
-        id_asignacion: int,
-        id_usuario: int | None = None
+        self, id_asignacion: int, id_usuario: int | None = None
     ) -> AsignacionRutas:
         """Valida que la asignación exista y esté en curso."""
         result = await self.db.execute(
@@ -48,20 +46,20 @@ class PosicionesService:
             )
         )
         asignacion = result.scalar_one_or_none()
-        
+
         if not asignacion:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró la asignación con id {id_asignacion}."
+                detail=f"No se encontró la asignación con id {id_asignacion}.",
             )
-        
+
         if asignacion.estado != EstadoAsignacion.en_curso:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"La asignación {id_asignacion} no está en curso. "
-                       f"Estado actual: {asignacion.estado.value}"
+                f"Estado actual: {asignacion.estado.value}",
             )
-        
+
         return asignacion
 
     async def registrar_posicion(
@@ -70,11 +68,13 @@ class PosicionesService:
         data: PosicionCreate,
     ) -> PosicionResponse:
         """Registra una nueva posición GPS."""
-        logger.info(f"Registrando posición para asignación {id_asignacion}: lat={data.latitud}, lon={data.longitud}, timestamp={data.timestamp}")
-        
+        logger.info(
+            f"Registrando posición para asignación {id_asignacion}: lat={data.latitud}, lon={data.longitud}, timestamp={data.timestamp}"
+        )
+
         # Validar asignación
         await self._validar_asignacion_en_curso(id_asignacion)
-        
+
         # Crear posición
         try:
             posicion = RecorridoPosicion(
@@ -86,7 +86,7 @@ class PosicionesService:
                 bearing=data.bearing,
                 timestamp=data.timestamp,
             )
-            
+
             self.db.add(posicion)
             await self.db.flush()
             await self.db.refresh(posicion)
@@ -94,50 +94,57 @@ class PosicionesService:
         except Exception as e:
             logger.error(f"Error al crear posición en BD: {str(e)}", exc_info=True)
             raise
-        
+
         # Notificar por WebSocket a los administradores
-        await ws_manager.broadcast(id_asignacion, {
-            "evento": "posicion_actualizada",
-            "id_asignacion": id_asignacion,
-            "latitud": float(data.latitud),
-            "longitud": float(data.longitud),
-            "timestamp": data.timestamp.isoformat(),
-            "data": { # Respaldo para compatibilidad
-                "lat": float(data.latitud),
-                "lon": float(data.longitud)
-            }
-        })
-        
+        await ws_manager.broadcast(
+            id_asignacion,
+            {
+                "evento": "posicion_actualizada",
+                "id_asignacion": id_asignacion,
+                "latitud": float(data.latitud),
+                "longitud": float(data.longitud),
+                "timestamp": data.timestamp.isoformat(),
+                "data": {  # Respaldo para compatibilidad
+                    "lat": float(data.latitud),
+                    "lon": float(data.longitud),
+                },
+            },
+        )
+
         # Enviar posición a la API externa
         try:
             result_ext = await self.db.execute(
-                select(AsignacionExterna).where(AsignacionExterna.id_asignacion == id_asignacion)
+                select(AsignacionExterna).where(
+                    AsignacionExterna.id_asignacion == id_asignacion
+                )
             )
             asignacion_externa = result_ext.scalar_one_or_none()
 
             if asignacion_externa and asignacion_externa.recorrido_externo_id:
-            sync_service = get_external_sync_service()
-            if sync_service.es_sincronizacion_habilitada():
-                try:
-                    metadata = await sync_service.sync_create_posicion(
-                        recorrido_externo_id=asignacion_externa.recorrido_externo_id,
-                        latitud=float(data.latitud),
-                        longitud=float(data.longitud),
-                        perfil_id=None,  # Usa el configurado por defecto dinámicamente
-                        recurso_id_local=posicion.id,
-                    )
-                    if metadata.estado != SyncStatus.SUCCESS:
-                        logger.warning(
-                            f"[SYNC] Error al sincronizar posición en asignación {id_asignacion}: {metadata.error_message}"
+                sync_service = get_external_sync_service()
+                if sync_service.es_sincronizacion_habilitada():
+                    try:
+                        metadata = await sync_service.sync_create_posicion(
+                            recorrido_externo_id=asignacion_externa.recorrido_externo_id,
+                            latitud=float(data.latitud),
+                            longitud=float(data.longitud),
+                            perfil_id=None,  # Usa el configurado por defecto dinámicamente
+                            recurso_id_local=posicion.id,
                         )
-                except Exception as e:
-                    logger.error(
-                        f"[SYNC ERROR] Error inesperado sincronizando posición: {str(e)}"
-                    )
+                        if metadata.estado != SyncStatus.SUCCESS:
+                            logger.warning(
+                                f"[SYNC] Error al sincronizar posición en asignación {id_asignacion}: {metadata.error_message}"
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"[SYNC ERROR] Error inesperado sincronizando posición: {str(e)}"
+                        )
         except Exception as e:
-            logger.error(f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}")
+            logger.error(
+                f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}"
+            )
             # No lanzamos excepción para no romper el flujo principal si la API externa falla
-        
+
         return PosicionResponse.model_validate(posicion)
 
     async def listar_posiciones(
@@ -156,22 +163,22 @@ class PosicionesService:
         if not result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró la asignación con id {id_asignacion}."
+                detail=f"No se encontró la asignación con id {id_asignacion}.",
             )
-        
+
         # Contar total
         count_result = await self.db.execute(
-            select(func.count()).select_from(RecorridoPosicion).where(
-                RecorridoPosicion.id_asignacion == id_asignacion
-            )
+            select(func.count())
+            .select_from(RecorridoPosicion)
+            .where(RecorridoPosicion.id_asignacion == id_asignacion)
         )
         total = count_result.scalar() or 0
-        
+
         # Calcular paginación
         offset = (page - 1) * page_size
         has_next = (offset + page_size) < total
         has_prev = page > 1
-        
+
         # Obtener posiciones
         result = await self.db.execute(
             select(RecorridoPosicion)
@@ -181,7 +188,7 @@ class PosicionesService:
             .limit(page_size)
         )
         posiciones = result.scalars().all()
-        
+
         return PosicionListResponse(
             items=[PosicionResponse.model_validate(p) for p in posiciones],
             total=total,
@@ -203,7 +210,7 @@ class PosicionesService:
             .limit(1)
         )
         posicion = result.scalar_one_or_none()
-        
+
         if posicion:
             return PosicionResponse.model_validate(posicion)
         return None
@@ -243,7 +250,7 @@ class PosicionesService:
         if len(datos_imagen) > max_size_bytes:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"La imagen excede el tamaño máximo de 5MB. Tamaño actual: {len(datos_imagen) / (1024*1024):.2f}MB"
+                detail=f"La imagen excede el tamaño máximo de 5MB. Tamaño actual: {len(datos_imagen) / (1024*1024):.2f}MB",
             )
 
         # Validar que sea una imagen válida (primeros bytes)
@@ -273,7 +280,7 @@ class PosicionesService:
         if detected_extension not in ["jpg", "jpeg", "png", "webp"]:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Formato de imagen no soportado: {detected_extension}. Formatos aceptados: JPEG, PNG, WEBP."
+                detail=f"Formato de imagen no soportado: {detected_extension}. Formatos aceptados: JPEG, PNG, WEBP.",
             )
 
         return datos_imagen, detected_extension
@@ -291,14 +298,14 @@ class PosicionesService:
         try:
             # Abrir la imagen desde bytes
             imagen = Image.open(BytesIO(datos_imagen))
-            
+
             # Convertir a RGB si es necesario (WEBP no soporta RGBA con transparencia)
             if imagen.mode in ("RGBA", "LA", "P"):
                 imagen = imagen.convert("RGB")
-            
+
             # Obtener dimensiones actuales
             ancho, alto = imagen.size
-            
+
             # Calcular nuevo tamaño manteniendo aspect ratio
             if ancho > alto:
                 if ancho > max_size:
@@ -314,21 +321,23 @@ class PosicionesService:
                 else:
                     nuevo_ancho = ancho
                     nuevo_alto = alto
-            
+
             # Redimensionar usando LANCZOS para mejor calidad
             if nuevo_ancho != ancho or nuevo_alto != alto:
-                imagen = imagen.resize((nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS)
-            
+                imagen = imagen.resize(
+                    (nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS
+                )
+
             # Guardar en formato WEBP
             output = BytesIO()
             imagen.save(output, format="WEBP", quality=85)
             return output.getvalue()
-            
+
         except Exception as e:
             logger.error(f"Error al procesar imagen: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error interno al procesar la imagen: {str(e)}"
+                detail=f"Error interno al procesar la imagen: {str(e)}",
             )
 
     async def _guardar_imagen_posicion(
@@ -360,11 +369,11 @@ class PosicionesService:
 
         # Retornar ruta relativa y URL
         ruta_relativa = f"posiciones/{nombre_archivo}"
-        
+
         # Obtener base URL de la configuración o usar localhost por defecto
         base_url = getattr(self._config, "base_url", "http://localhost:8000")
         url = f"{base_url}/storage/posiciones/{nombre_archivo}"
-        
+
         return ruta_relativa, url
 
     async def registrar_imagen_posicion(
@@ -389,16 +398,14 @@ class PosicionesService:
 
         # Buscar la posición por UUID
         result = await self.db.execute(
-            select(RecorridoPosicion).where(
-                RecorridoPosicion.uuid == posicion_uuid
-            )
+            select(RecorridoPosicion).where(RecorridoPosicion.uuid == posicion_uuid)
         )
         posicion = result.scalar_one_or_none()
 
         if not posicion:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="La posición indicada no existe."
+                detail="La posición indicada no existe.",
             )
 
         # Validar que la asignación esté en curso
@@ -406,8 +413,7 @@ class PosicionesService:
 
         # Guardar imagen
         ruta_relativa, url = await self._guardar_imagen_posicion(
-            datos_procesados,
-            posicion_uuid
+            datos_procesados, posicion_uuid
         )
 
         # Actualizar el campo imagen en la posición
@@ -416,9 +422,7 @@ class PosicionesService:
         await self.db.refresh(posicion)
 
         return PosicionImagenResponse(
-            posicion_id=posicion_uuid,
-            imagen=ruta_relativa,
-            url=url
+            posicion_id=posicion_uuid, imagen=ruta_relativa, url=url
         )
 
     async def obtener_posiciones_activas(self) -> list[dict]:
@@ -430,9 +434,9 @@ class PosicionesService:
             )
         )
         asignaciones_activas = result.scalars().all()
-        
+
         posiciones_activas = []
-        
+
         for asignacion in asignaciones_activas:
             # Obtener la última posición de cada asignación
             result_pos = await self.db.execute(
@@ -442,18 +446,20 @@ class PosicionesService:
                 .limit(1)
             )
             posicion = result_pos.scalar_one_or_none()
-            
+
             if posicion:
-                posiciones_activas.append({
-                    "id_asignacion": asignacion.id_asignacion,
-                    "id_vehiculo": asignacion.id_vehiculo,
-                    "id_ruta": asignacion.id_ruta,
-                    "latitud": posicion.latitud,
-                    "longitud": posicion.longitud,
-                    "timestamp": posicion.timestamp,
-                    "speed": posicion.speed,
-                    "bearing": posicion.bearing,
-                    "accuracy": posicion.accuracy
-                })
-        
+                posiciones_activas.append(
+                    {
+                        "id_asignacion": asignacion.id_asignacion,
+                        "id_vehiculo": asignacion.id_vehiculo,
+                        "id_ruta": asignacion.id_ruta,
+                        "latitud": posicion.latitud,
+                        "longitud": posicion.longitud,
+                        "timestamp": posicion.timestamp,
+                        "speed": posicion.speed,
+                        "bearing": posicion.bearing,
+                        "accuracy": posicion.accuracy,
+                    }
+                )
+
         return posiciones_activas
