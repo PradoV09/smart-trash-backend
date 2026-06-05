@@ -20,6 +20,7 @@ class Vehiculo(Base):
     id_vehiculo  = Column(Integer, primary_key=True, autoincrement=True)
     id_externo   = Column(String(36), unique=True, nullable=True, index=True)
     placa        = Column(String(20), unique=True, nullable=False)
+    marca        = Column(String(100), nullable=True)
     modelo       = Column(String(100), nullable=True)
     capacidad_m3 = Column(Float, nullable=True)
     estado       = Column(Enum(EstadoVehiculo), nullable=False, default=EstadoVehiculo.disponible)
