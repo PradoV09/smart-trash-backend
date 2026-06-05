@@ -46,22 +46,37 @@ class VehiculoService:
         vehiculo = Vehiculo(**data.model_dump())
         self.db.add(vehiculo)
         await self.db.flush()
-        # La API externa puede fallar (URL, red, 4xx/5xx). Antes se propagaba
-        # HTTPException y get_db hacía rollback: el vehículo no quedaba en BD local.
-        try:
-            ext_id, _ = await APIExternaService().crear_vehiculo_externo(
-                placa=vehiculo.placa,
-                modelo=vehiculo.modelo,
-                capacidad_m3=vehiculo.capacidad_m3,
-                estado=vehiculo.estado,
+
+        # Sincronización robusta usando ExternalSyncService
+        sync_service = get_external_sync_service()
+        if sync_service.es_sincronizacion_habilitada():
+            try:
+                metadata = await sync_service.sync_create_vehiculo(
+                    placa=vehiculo.placa,
+                    modelo=vehiculo.modelo,
+                    capacidad_m3=vehiculo.capacidad_m3,
+                    estado=(
+                        vehiculo.estado.value
+                        if hasattr(vehiculo.estado, "value")
+                        else str(vehiculo.estado)
+                    ),
+                    recurso_id_local=vehiculo.id_vehiculo,
+                )
+                if metadata.estado == SyncStatus.SUCCESS:
+                    vehiculo.id_externo = metadata.id_externo
+                else:
+                    logger.warning(
+                        f"[SYNC] Vehículo {vehiculo.placa} creado localmente pero la API externa rechazó la sincronización: {metadata.error_message}"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"[SYNC ERROR] Error inesperado al intentar enviar vehículo {vehiculo.placa} a la API: {str(e)}"
+                )
+        else:
+            logger.info(
+                f"[SYNC] Sincronización deshabilitada para vehículo {vehiculo.placa}. Verifique RUTAS_API_URL y PERFIL_ID."
             )
-            vehiculo.id_externo = ext_id
-        except HTTPException as exc:
-            logger.warning(
-                "Vehículo %s guardado solo en BD local; API externa no sincronizó: %s",
-                vehiculo.placa,
-                str(exc.detail),
-            )
+
         await self.db.flush()
         return vehiculo
 
