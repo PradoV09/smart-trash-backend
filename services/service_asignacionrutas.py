@@ -383,6 +383,9 @@ class AsignacionService:
         api_service = APIExternaService()
         recorrido_externo_id = f"local_{id_asignacion}" # Valor por defecto
         
+        # Debug: Log values being sent to external API
+        logger.info(f"Enviando a API externa - ruta_id: {asignacion.id_ruta}, vehiculo_id: {asignacion.vehiculo.id_externo}, perfil_id: {perfil_id}")
+        
         try:
             response = await api_service.iniciar_recorrido_externo(
                 ruta_id=asignacion.id_ruta,
@@ -390,6 +393,7 @@ class AsignacionService:
                 perfil_id=perfil_id
             )
             recorrido_externo_id = response.get("id") or response.get("recorrido_id") or recorrido_externo_id
+            logger.info(f"Respuesta de API externa: {response}")
         except Exception as e:
             logger.warning(f"⚠️ No se pudo sincronizar con API externa (Modo Local activo): {str(e)}")
             # En local, permitimos continuar aunque la API externa falle
