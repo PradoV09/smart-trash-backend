@@ -95,24 +95,21 @@ class PosicionesService:
             logger.error(f"Error al crear posición en BD: {str(e)}", exc_info=True)
             raise
 
-        # Notificar por WebSocket a los administradores
-        await ws_manager.broadcast(
+        # Notificar por WebSocket y actualizar cache para envíos periódicos
+        await ws_manager.emitir_posicion_actualizada(
             id_asignacion,
             {
-                "evento": "posicion_actualizada",
-                "id_asignacion": id_asignacion,
-                "latitud": float(data.latitud),
-                "longitud": float(data.longitud),
-                "timestamp": data.timestamp.isoformat(),
-                "data": {  # Respaldo para compatibilidad
-                    "lat": float(data.latitud),
-                    "lon": float(data.longitud),
-                },
+                "lat": float(data.latitud),
+                "lon": float(data.longitud),
+                "velocidad": data.speed,
+                "heading": data.bearing,
             },
         )
 
         # Enviar posición a la API externa
-        print(f"[DEBUG POSICION] Iniciando sincronización de posición para asignación {id_asignacion}")
+        print(
+            f"[DEBUG POSICION] Iniciando sincronización de posición para asignación {id_asignacion}"
+        )
         try:
             result_ext = await self.db.execute(
                 select(AsignacionExterna).where(
@@ -123,15 +120,17 @@ class PosicionesService:
             print(f"[DEBUG POSICION] asignacion_externa: {asignacion_externa}")
 
             if asignacion_externa and asignacion_externa.recorrido_externo_id:
-                print(f"[DEBUG POSICION] recorrido_externo_id: {asignacion_externa.recorrido_externo_id}")
+                print(
+                    f"[DEBUG POSICION] recorrido_externo_id: {asignacion_externa.recorrido_externo_id}"
+                )
                 sync_service = get_external_sync_service()
                 print(f"[DEBUG POSICION] sync_service creado: {sync_service}")
                 print(f"[DEBUG POSICION] api_base_url: {sync_service.api_base_url}")
                 print(f"[DEBUG POSICION] perfil_id: {sync_service.perfil_id}")
-                
+
                 habilitada = sync_service.es_sincronizacion_habilitada()
                 print(f"[DEBUG POSICION] es_sincronizacion_habilitada() = {habilitada}")
-                
+
                 if habilitada:
                     try:
                         print(f"[SYNC POSICION] Enviando posición a API externa...")
@@ -142,7 +141,9 @@ class PosicionesService:
                             perfil_id=None,  # Usa el configurado por defecto dinámicamente
                             recurso_id_local=posicion.id,
                         )
-                        print(f"[DEBUG POSICION] metadata recibida: estado={metadata.estado}, error={metadata.error_message}")
+                        print(
+                            f"[DEBUG POSICION] metadata recibida: estado={metadata.estado}, error={metadata.error_message}"
+                        )
                         if metadata.estado != SyncStatus.SUCCESS:
                             logger.warning(
                                 f"[SYNC] Error al sincronizar posición en asignación {id_asignacion}: {metadata.error_message}"
@@ -157,7 +158,9 @@ class PosicionesService:
                 else:
                     print(f"[SYNC POSICION SKIP] Sincronización deshabilitada")
             else:
-                print(f"[DEBUG POSICION] No hay asignacion_externa o recorrido_externo_id")
+                print(
+                    f"[DEBUG POSICION] No hay asignacion_externa o recorrido_externo_id"
+                )
         except Exception as e:
             logger.error(
                 f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}"
@@ -454,21 +457,30 @@ class PosicionesService:
                 sync_service = get_external_sync_service()
                 if sync_service.es_sincronizacion_habilitada():
                     # La API externa requiere que el lado mayor no supere los 256px
-                    datos_imagen_original, _ = self._validar_imagen_base64(imagen_base64)
-                    datos_procesados_ext = self._procesar_imagen(datos_imagen_original, max_size=256)
-                    
+                    datos_imagen_original, _ = self._validar_imagen_base64(
+                        imagen_base64
+                    )
+                    datos_procesados_ext = self._procesar_imagen(
+                        datos_imagen_original, max_size=256
+                    )
+
                     # Codificar en base64 con prefijo MIME para el envío externo
-                    imagen_ext_b64 = base64.b64encode(datos_procesados_ext).decode('utf-8')
+                    imagen_ext_b64 = base64.b64encode(datos_procesados_ext).decode(
+                        "utf-8"
+                    )
                     payload_ext = f"data:image/webp;base64,{imagen_ext_b64}"
 
-                    logger.info(f"[SYNC IMAGE] Sincronizando imagen de posición {posicion_uuid} con API externa")
-                    if hasattr(sync_service, 'sync_upload_image_posicion'):
+                    logger.info(
+                        f"[SYNC IMAGE] Sincronizando imagen de posición {posicion_uuid} con API externa"
+                    )
+                    if hasattr(sync_service, "sync_upload_image_posicion"):
                         await sync_service.sync_upload_image_posicion(
-                            posicion_uuid=posicion_uuid,
-                            imagen_base64=payload_ext
+                            posicion_uuid=posicion_uuid, imagen_base64=payload_ext
                         )
         except Exception as e:
-            logger.error(f"Error al sincronizar imagen con API externa para posición {posicion_uuid}: {str(e)}")
+            logger.error(
+                f"Error al sincronizar imagen con API externa para posición {posicion_uuid}: {str(e)}"
+            )
 
         return PosicionImagenResponse(
             posicion_id=posicion_uuid, imagen=ruta_relativa, url=url
