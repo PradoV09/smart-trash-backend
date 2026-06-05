@@ -50,8 +50,6 @@ class VehiculoService:
         self.db.add(vehiculo)
         await self.db.flush()
 
-        logger.info(f"[DEBUG] Vehículo creado localmente: id={vehiculo.id_vehiculo}, placa={vehiculo.placa}")
-
         # ====================================================================
         # SINCRONIZACIÓN CON API EXTERNA
         # Estrategia: intentar con ExternalSyncService primero (payload con
@@ -61,11 +59,7 @@ class VehiculoService:
         sync_exitoso = False
         sync_service = get_external_sync_service()
 
-        logger.info(f"[DEBUG] sync_service creado, verificando si está habilitada...")
-        habilitada = sync_service.es_sincronizacion_habilitada()
-        logger.info(f"[DEBUG] es_sincronizacion_habilitada() = {habilitada}")
-
-        if habilitada:
+        if sync_service.es_sincronizacion_habilitada():
             # --- Intento 1: ExternalSyncService ---
             try:
                 logger.info(
@@ -74,6 +68,7 @@ class VehiculoService:
                 )
                 metadata = await sync_service.sync_create_vehiculo(
                     placa=vehiculo.placa,
+                    marca=data.marca,
                     modelo=vehiculo.modelo,
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
@@ -225,7 +220,7 @@ class VehiculoService:
                     )
                     metadata = await sync_service.sync_create_vehiculo(
                         placa=vehiculo.placa,
-                        marca=vehiculo.marca,
+                        marca=None,
                         modelo=vehiculo.modelo,
                         activo=vehiculo.estado != EstadoVehiculo.inactivo,
                         recurso_id_local=id_vehiculo,
@@ -296,7 +291,7 @@ class VehiculoService:
                     )
                     metadata = await sync_service.sync_create_vehiculo(
                         placa=vehiculo.placa,
-                        marca=vehiculo.marca,
+                        marca=None,
                         modelo=vehiculo.modelo,
                         activo=estado != EstadoVehiculo.inactivo,
                         recurso_id_local=id_vehiculo,

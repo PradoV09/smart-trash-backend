@@ -339,6 +339,7 @@ class ExternalSyncService:
     async def sync_create_vehiculo(
         self,
         placa: str,
+        marca: Optional[str],
         modelo: Optional[str],
         activo: bool,
         recurso_id_local: Optional[int] = None,
@@ -348,6 +349,7 @@ class ExternalSyncService:
 
         Args:
             placa: Placa del vehículo
+            marca: Marca del vehículo (opcional)
             modelo: Año o descripción del modelo
             activo: Indica si el vehículo está operativo
             recurso_id_local: ID local del vehículo (opcional para logging)
@@ -366,6 +368,9 @@ class ExternalSyncService:
                 "activo": activo,
                 "perfil_id": perfil_id,
             }
+            # Solo incluir marca si tiene valor (no enviar null)
+            if marca and marca.strip():
+                payload["marca"] = marca
 
             logger.info(
                 f"[SYNC] Creando vehículo {placa} en API externa. "
