@@ -130,8 +130,20 @@ async def lifespan(app: FastAPI):
     # 3. Pre-carga de configuraciones
     await precargar_configuraciones()
     print("✅ Configuraciones pre-cargadas")
+    
+    # 4. Verificar configuración de sincronización
+    from core.config import get_external_api_config
+    from services.external_sync_service import get_external_sync_service
+    try:
+        cfg = get_external_api_config()
+        sync_service = get_external_sync_service()
+        print(f"[SYNC STARTUP] api_base_url: {cfg.api_base_url}")
+        print(f"[SYNC STARTUP] perfil_id: {cfg.perfil_id}")
+        print(f"[SYNC STARTUP] habilitada: {sync_service.es_sincronizacion_habilitada()}")
+    except Exception as e:
+        print(f"[SYNC STARTUP ERROR] {str(e)}")
 
-    # 4. Seeder de administrador por defecto (idempotente)
+    # 5. Seeder de administrador por defecto (idempotente)
     await seed_admin()
     print("✅ Seeder de usuario admin ejecutado")
 
