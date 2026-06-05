@@ -758,8 +758,5 @@ _sync_service: Optional[ExternalSyncService] = None
 
 
 def get_external_sync_service() -> ExternalSyncService:
-    """Obtiene la instancia global del servicio de sincronización."""
-    global _sync_service
-    if _sync_service is None:
-        _sync_service = ExternalSyncService()
-    return _sync_service
+    """Obtiene una instancia fresca del servicio de sincronización (lee variables de entorno cada vez)."""
+    return ExternalSyncService()
