@@ -115,6 +115,7 @@ async def lifespan(app: FastAPI):
     # STARTUP
     # ================================
     print("🚀 Iniciando Smart Trash Route API...")
+    print("[VERSION] Código con logs de depuración de sincronización de vehículos - 2026-06-05")
 
     # 1. Base de datos
     await inicializar_base_datos()
