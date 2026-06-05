@@ -451,7 +451,21 @@ class APIExternaService:
 
         if response.is_error:
             self._raise_external_error(response)
-        raw = response.json()
+        
+        if not response.content:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="La API externa devolvió respuesta vacía al crear vehículo."
+            )
+        
+        try:
+            raw = response.json()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Respuesta no es JSON al crear vehículo: {response.text}"
+            )
+        
         if not isinstance(raw, dict):
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
