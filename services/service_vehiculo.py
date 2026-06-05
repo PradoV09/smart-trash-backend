@@ -100,9 +100,9 @@ class VehiculoService:
                     api_ext = APIExternaService()
                     ext_id, resp_json = await api_ext.crear_vehiculo_externo(
                         placa=vehiculo.placa,
+                        marca=data.marca,
                         modelo=vehiculo.modelo,
-                        capacidad_m3=vehiculo.capacidad_m3,
-                        estado=vehiculo.estado,
+                        activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     )
                     vehiculo.id_externo = ext_id
                     sync_exitoso = True

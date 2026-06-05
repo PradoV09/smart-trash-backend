@@ -433,24 +433,25 @@ class APIExternaService:
         self,
         *,
         placa: str,
+        marca: str | None,
         modelo: str | None,
-        capacidad_m3: float | None,
-        estado: EstadoVehiculo,
+        activo: bool,
     ) -> tuple[str, dict[str, Any]]:
         """Crea vehículo en API externa. Devuelve (id_externo_uuid, respuesta_json).
 
-        La API externa espera: {placa, marca, modelo, activo (bool), perfil_id}.
+        La API externa espera: {placa, marca (opcional), modelo, activo (bool), perfil_id}.
         """
         self._validate_config()
         self._validate_perfil_id_config()
-        # La API externa usa "activo" (bool), NO "estado" (string).
         payload: dict[str, Any] = {
             "placa": placa,
+            "modelo": modelo,
+            "activo": activo,
             "perfil_id": self.perfil_id,
-            "activo": estado != EstadoVehiculo.inactivo,
         }
-        if modelo is not None:
-            payload["modelo"] = modelo
+        # Solo incluir marca si tiene valor (no enviar null)
+        if marca and marca.strip():
+            payload["marca"] = marca
 
         logger.info(
             f"[API_EXTERNA] Creando vehículo en API externa. "
