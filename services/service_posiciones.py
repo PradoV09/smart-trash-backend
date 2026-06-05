@@ -112,6 +112,7 @@ class PosicionesService:
         )
 
         # Enviar posición a la API externa
+        print(f"[DEBUG POSICION] Iniciando sincronización de posición para asignación {id_asignacion}")
         try:
             result_ext = await self.db.execute(
                 select(AsignacionExterna).where(
@@ -119,11 +120,21 @@ class PosicionesService:
                 )
             )
             asignacion_externa = result_ext.scalar_one_or_none()
+            print(f"[DEBUG POSICION] asignacion_externa: {asignacion_externa}")
 
             if asignacion_externa and asignacion_externa.recorrido_externo_id:
+                print(f"[DEBUG POSICION] recorrido_externo_id: {asignacion_externa.recorrido_externo_id}")
                 sync_service = get_external_sync_service()
-                if sync_service.es_sincronizacion_habilitada():
+                print(f"[DEBUG POSICION] sync_service creado: {sync_service}")
+                print(f"[DEBUG POSICION] api_base_url: {sync_service.api_base_url}")
+                print(f"[DEBUG POSICION] perfil_id: {sync_service.perfil_id}")
+                
+                habilitada = sync_service.es_sincronizacion_habilitada()
+                print(f"[DEBUG POSICION] es_sincronizacion_habilitada() = {habilitada}")
+                
+                if habilitada:
                     try:
+                        print(f"[SYNC POSICION] Enviando posición a API externa...")
                         metadata = await sync_service.sync_create_posicion(
                             recorrido_externo_id=asignacion_externa.recorrido_externo_id,
                             latitud=float(data.latitud),
@@ -131,18 +142,27 @@ class PosicionesService:
                             perfil_id=None,  # Usa el configurado por defecto dinámicamente
                             recurso_id_local=posicion.id,
                         )
+                        print(f"[DEBUG POSICION] metadata recibida: estado={metadata.estado}, error={metadata.error_message}")
                         if metadata.estado != SyncStatus.SUCCESS:
                             logger.warning(
                                 f"[SYNC] Error al sincronizar posición en asignación {id_asignacion}: {metadata.error_message}"
                             )
+                        else:
+                            print(f"[SYNC POSICION ✅] Posición enviada exitosamente")
                     except Exception as e:
                         logger.error(
                             f"[SYNC ERROR] Error inesperado sincronizando posición: {str(e)}"
                         )
+                        print(f"[SYNC POSICION ❌] Error: {e}")
+                else:
+                    print(f"[SYNC POSICION SKIP] Sincronización deshabilitada")
+            else:
+                print(f"[DEBUG POSICION] No hay asignacion_externa o recorrido_externo_id")
         except Exception as e:
             logger.error(
                 f"Error al reenviar posición a la API externa para asignación {id_asignacion}: {str(e)}"
             )
+            print(f"[DEBUG POSICION] Error general: {e}")
             # No lanzamos excepción para no romper el flujo principal si la API externa falla
 
         return PosicionResponse.model_validate(posicion)
