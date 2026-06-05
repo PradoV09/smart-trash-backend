@@ -367,7 +367,7 @@ class AsignacionService:
         return True
 
     async def iniciar_recorrido_con_api_externa(
-        self, id_asignacion: int, perfil_id: str | None = None
+        self, id_asignacion: int, perfil_id: str | None = None, latitud: float | None = None, longitud: float | None = None
     ) -> AsignacionRutas:
         """Inicia el recorrido integrando con la API externa.
 
@@ -486,6 +486,24 @@ class AsignacionService:
                 ultima_sincro=datetime.now(timezone.utc),
             )
             self.db.add(asignacion_externa)
+
+        # 5b. Enviar posición inicial a la API externa si se proporcionó
+        if latitud is not None and longitud is not None and sync_service.es_sincronizacion_habilitada():
+            try:
+                print(f"[DEBUG POSICION INICIAL] Enviando posición inicial al iniciar ruta: lat={latitud}, lon={longitud}")
+                metadata = await sync_service.sync_create_posicion(
+                    recorrido_externo_id=str(recorrido_externo_id),
+                    latitud=float(latitud),
+                    longitud=float(longitud),
+                    perfil_id=perfil_id,
+                    recurso_id_local=None,
+                )
+                if metadata.estado == SyncStatus.SUCCESS:
+                    print(f"[SYNC POSICION INICIAL ✅] Posición inicial enviada exitosamente")
+                else:
+                    print(f"[SYNC POSICION INICIAL ⚠️] Error al enviar posición inicial: {metadata.error_message}")
+            except Exception as e:
+                print(f"[SYNC POSICION INICIAL ❌] Error al enviar posición inicial: {e}")
 
         # 6. Cambiar estado a en_curso
         asignacion.estado = EstadoAsignacion.en_curso

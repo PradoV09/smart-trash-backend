@@ -13,6 +13,7 @@ La lógica de operación de rutas vive en los services.
 """
 
 from fastapi import Depends, HTTPException, status
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependecies import get_db, AdminDep, DriverDep, RecolectorDep, UserDep
 from core.settings import settings
@@ -172,6 +173,8 @@ async def ver_asignacion_driver(
 
 async def iniciar_recorrido(
     id_asignacion: int,
+    latitud: Optional[float] = None,
+    longitud: Optional[float] = None,
     db: AsyncSession = Depends(get_db),
     _: Usuario = DriverDep,
 ) -> AsignacionResponse:
@@ -179,7 +182,9 @@ async def iniciar_recorrido(
     try:
         asignacion = await AsignacionService(db).iniciar_recorrido_con_api_externa(
             id_asignacion=id_asignacion,
-            perfil_id=settings.PERFIL_ID
+            perfil_id=settings.PERFIL_ID,
+            latitud=latitud,
+            longitud=longitud,
         )
         return success_response(data=asignacion, message="Recorrido iniciado exitosamente.")
     except HTTPException:
