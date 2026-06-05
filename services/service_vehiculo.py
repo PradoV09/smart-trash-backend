@@ -74,7 +74,6 @@ class VehiculoService:
                 )
                 metadata = await sync_service.sync_create_vehiculo(
                     placa=vehiculo.placa,
-                    marca=data.marca,
                     modelo=vehiculo.modelo,
                     activo=vehiculo.estado != EstadoVehiculo.inactivo,
                     recurso_id_local=vehiculo.id_vehiculo,
