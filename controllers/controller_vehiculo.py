@@ -134,24 +134,3 @@ async def eliminar_vehiculo(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al eliminar el vehículo."
         )
-
-
-async def sincronizar_vehiculos_desde_api_externa(
-    db: AsyncSession = Depends(get_db),
-    _: Usuario = AdminDep,
-) -> SuccessResponse[dict[str, int]]:
-    """Sincroniza vehículos desde la API externa a la BD local."""
-    try:
-        estadisticas = await VehiculoService(db).sincronizar_vehiculos_desde_api_externa()
-        return success_response(
-            data=estadisticas,
-            message=f"Sincronización completada: {estadisticas['importados']} importados, {estadisticas['existentes']} ya existían, {estadisticas['errores']} errores."
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error al sincronizar vehículos desde API externa: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al sincronizar vehículos: {str(e)}"
-        )
