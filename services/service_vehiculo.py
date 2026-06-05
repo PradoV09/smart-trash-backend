@@ -28,6 +28,11 @@ def _id_desde_item_api(item: dict) -> str | None:
     return None
 
 
+def _normalizar_placa(placa: str) -> str:
+    """Normaliza la placa eliminando espacios, guiones y guiones bajos."""
+    return placa.strip().replace(" ", "").replace("_", "").replace("-", "").upper()
+
+
 class VehiculoService:
 
     def __init__(self, db: AsyncSession):
@@ -35,15 +40,18 @@ class VehiculoService:
 
     async def añadir_vehiculo(self, data: VehiculoCreate) -> Vehiculo:
         """Crea un vehículo nuevo verificando que la placa no esté repetida."""
+        placa_normalizada = _normalizar_placa(data.placa)
         result = await self.db.execute(
-            select(Vehiculo).where(Vehiculo.placa == data.placa)
+            select(Vehiculo).where(Vehiculo.placa == placa_normalizada)
         )
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe un vehículo registrado con la placa '{data.placa}'.",
+                detail=f"Ya existe un vehículo registrado con la placa '{placa_normalizada}'.",
             )
-        vehiculo = Vehiculo(**data.model_dump())
+        vehiculo_data = data.model_dump()
+        vehiculo_data["placa"] = placa_normalizada
+        vehiculo = Vehiculo(**vehiculo_data)
         self.db.add(vehiculo)
         await self.db.flush()
         # La API externa puede fallar (URL, red, 4xx/5xx). Antes se propagaba
@@ -119,6 +127,8 @@ class VehiculoService:
         """Actualiza parcialmente los datos de un vehículo existente."""
         vehiculo = await self._obtener_vehiculo_orm(id_vehiculo)
         for campo, valor in data.model_dump(exclude_none=True).items():
+            if campo == "placa" and valor:
+                valor = _normalizar_placa(valor)
             setattr(vehiculo, campo, valor)
         await self.db.flush()
 

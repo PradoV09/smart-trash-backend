@@ -15,9 +15,9 @@ from fastapi import Form
 class VehiculoCreate(BaseModel):
     placa: str = Field(
         ...,
-        pattern=r"^[A-Z]{3}\s*\d{3}$",
-        description="Placa del vehículo (3 letras + 3 números, ej. ABC123 o ABC 123)",
-)
+        pattern=r"^\s*[A-Z_-]{3}[\s_-]*\d{3}\s*$",
+        description="Placa del vehículo (3 letras + 3 números, permite espacios, _ y -)",
+    )
     modelo: Optional[str] = Field(None, max_length=50, description="Modelo del vehículo")
     capacidad_m3: Optional[float] = Field(None, gt=0, description="Capacidad del vehículo en metros cúbicos")
     estado: EstadoVehiculo = Field(EstadoVehiculo.disponible, description="Estado operativo del vehículo")
@@ -25,7 +25,7 @@ class VehiculoCreate(BaseModel):
     @classmethod
     def as_form(
         cls,
-        placa: str = Form(..., pattern=r"^[A-Z]{3}\s*\d{3}$"),
+        placa: str = Form(..., pattern=r"^\s*[A-Z_-]{3}[\s_-]*\d{3}\s*$"),
         modelo: Optional[str] = Form(None),
         capacidad_m3: Optional[float] = Form(None),
         estado: EstadoVehiculo = Form(EstadoVehiculo.disponible),
