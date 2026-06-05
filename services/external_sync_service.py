@@ -605,7 +605,7 @@ class ExternalSyncService:
             )
 
             # Extraer ID del recorrido
-            recorrido_id = response.get("id") or response.get("recorrido_id")
+            recorrido_id = self._extract_recorrido_id(response)
 
             logger.info(f"[SYNC] Asignación creada. Recorrido externo: {recorrido_id}")
 
@@ -615,7 +615,7 @@ class ExternalSyncService:
                 operacion=SyncOperationType.CREATE,
                 estado=SyncStatus.SUCCESS,
                 respuesta_externa=response,
-                id_externo=str(recorrido_id) if recorrido_id else None,
+                id_externo=recorrido_id,
                 ultimo_intento=datetime.now(timezone.utc),
             )
 
