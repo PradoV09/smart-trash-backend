@@ -28,6 +28,8 @@ async def crear_vehiculo(
     try:
         vehiculo = await VehiculoService(db).añadir_vehiculo(data)
         return success_response(data=vehiculo, message="Vehículo creado exitosamente.")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error al crear vehículo: {str(e)}")
         raise HTTPException(
@@ -131,4 +133,4 @@ async def eliminar_vehiculo(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al eliminar el vehículo."
-        )
+        )
