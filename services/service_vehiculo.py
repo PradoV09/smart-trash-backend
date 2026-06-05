@@ -50,6 +50,8 @@ class VehiculoService:
         self.db.add(vehiculo)
         await self.db.flush()
 
+        logger.info(f"[DEBUG] Vehículo creado localmente: id={vehiculo.id_vehiculo}, placa={vehiculo.placa}")
+
         # ====================================================================
         # SINCRONIZACIÓN CON API EXTERNA
         # Estrategia: intentar con ExternalSyncService primero (payload con
@@ -59,7 +61,11 @@ class VehiculoService:
         sync_exitoso = False
         sync_service = get_external_sync_service()
 
-        if sync_service.es_sincronizacion_habilitada():
+        logger.info(f"[DEBUG] sync_service creado, verificando si está habilitada...")
+        habilitada = sync_service.es_sincronizacion_habilitada()
+        logger.info(f"[DEBUG] es_sincronizacion_habilitada() = {habilitada}")
+
+        if habilitada:
             # --- Intento 1: ExternalSyncService ---
             try:
                 logger.info(

@@ -698,8 +698,15 @@ class ExternalSyncService:
         """Extrae el ID de un vehículo desde respuesta de API."""
         # Intentar en la raíz y dentro de un posible objeto 'data' o 'vehiculo'
         fuentes = [data]
+
+        # Caso: {"data": {"id": ...}}  ← objeto directo
         if isinstance(data.get("data"), dict):
             fuentes.append(data["data"])
+
+        # Caso: {"data": [{"id": ...}]}  ← lista paginada (bug actual)
+        if isinstance(data.get("data"), list) and len(data["data"]) > 0:
+            fuentes.append(data["data"][0])
+
         if isinstance(data.get("vehiculo"), dict):
             fuentes.append(data["vehiculo"])
 

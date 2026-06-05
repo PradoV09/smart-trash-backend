@@ -217,13 +217,26 @@ class APIExternaService:
 
     @staticmethod
     def _extract_vehiculo_id(data: dict[str, Any]) -> str:
-        for key in ("id", "vehiculo_id", "id_vehiculo"):
-            v = data.get(key)
-            if v is not None:
-                return str(v)
+        fuentes = [data]
+
+        # Caso: {"data": {"id": ...}}  ← objeto directo
+        if isinstance(data.get("data"), dict):
+            fuentes.append(data["data"])
+
+        # Caso: {"data": [{"id": ...}]}  ← lista paginada (bug actual)
+        if isinstance(data.get("data"), list) and len(data["data"]) > 0:
+            fuentes.append(data["data"][0])
+
         nested = data.get("vehiculo")
-        if isinstance(nested, dict) and nested.get("id") is not None:
-            return str(nested["id"])
+        if isinstance(nested, dict):
+            fuentes.append(nested)
+
+        for fuente in fuentes:
+            for key in ("id", "vehiculo_id", "id_vehiculo", "uuid"):
+                v = fuente.get(key)
+                if v is not None:
+                    return str(v)
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="La API externa no devolvió un identificador de vehículo reconocible.",
