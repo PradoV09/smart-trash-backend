@@ -441,6 +441,35 @@ class PosicionesService:
         await self.db.flush()
         await self.db.refresh(posicion)
 
+        # Sincronización con API externa
+        try:
+            result_ext = await self.db.execute(
+                select(AsignacionExterna).where(
+                    AsignacionExterna.id_asignacion == posicion.id_asignacion
+                )
+            )
+            asignacion_externa = result_ext.scalar_one_or_none()
+
+            if asignacion_externa and asignacion_externa.recorrido_externo_id:
+                sync_service = get_external_sync_service()
+                if sync_service.es_sincronizacion_habilitada():
+                    # La API externa requiere que el lado mayor no supere los 256px
+                    datos_imagen_original, _ = self._validar_imagen_base64(imagen_base64)
+                    datos_procesados_ext = self._procesar_imagen(datos_imagen_original, max_size=256)
+                    
+                    # Codificar en base64 con prefijo MIME para el envío externo
+                    imagen_ext_b64 = base64.b64encode(datos_procesados_ext).decode('utf-8')
+                    payload_ext = f"data:image/webp;base64,{imagen_ext_b64}"
+
+                    logger.info(f"[SYNC IMAGE] Sincronizando imagen de posición {posicion_uuid} con API externa")
+                    if hasattr(sync_service, 'sync_upload_image_posicion'):
+                        await sync_service.sync_upload_image_posicion(
+                            posicion_uuid=posicion_uuid,
+                            imagen_base64=payload_ext
+                        )
+        except Exception as e:
+            logger.error(f"Error al sincronizar imagen con API externa para posición {posicion_uuid}: {str(e)}")
+
         return PosicionImagenResponse(
             posicion_id=posicion_uuid, imagen=ruta_relativa, url=url
         )
