@@ -17,7 +17,6 @@ class RecorridoPosicion(Base):
     __tablename__ = "recorrido_posiciones"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     id_asignacion = Column(
         Integer,
         ForeignKey("asignaciones_rutas.id_asignacion", ondelete="CASCADE"),
