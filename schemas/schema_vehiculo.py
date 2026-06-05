@@ -68,7 +68,6 @@ class VehiculoResponse(BaseModel):
     id_vehiculo:  int
     id_externo:   Optional[str] = None
     placa:        str
-    marca:        Optional[str] = None
     modelo:       Optional[str] = None
     capacidad_m3: Optional[float]
     estado:       EstadoVehiculo

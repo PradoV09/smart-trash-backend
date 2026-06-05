@@ -144,12 +144,11 @@ class VehiculoService:
         salida: list[VehiculoResponse] = []
         for v in locales:
             datos = por_id.get(v.id_externo) if v.id_externo else None
-            # Manejar vehículos que no tienen el campo marca (registros antiguos)
+            # No incluir marca en la respuesta (frontend no la usa)
             vehiculo_dict = {
                 "id_vehiculo": v.id_vehiculo,
                 "id_externo": v.id_externo,
                 "placa": v.placa,
-                "marca": getattr(v, 'marca', None),
                 "modelo": v.modelo,
                 "capacidad_m3": v.capacidad_m3,
                 "estado": v.estado,
@@ -185,12 +184,11 @@ class VehiculoService:
                         break
             except HTTPException:
                 pass
-        # Manejar vehículos que no tienen el campo marca (registros antiguos)
+        # No incluir marca en la respuesta (frontend no la usa)
         vehiculo_dict = {
             "id_vehiculo": vehiculo.id_vehiculo,
             "id_externo": vehiculo.id_externo,
             "placa": vehiculo.placa,
-            "marca": getattr(vehiculo, 'marca', None),
             "modelo": vehiculo.modelo,
             "capacidad_m3": vehiculo.capacidad_m3,
             "estado": vehiculo.estado,
