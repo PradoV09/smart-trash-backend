@@ -364,11 +364,13 @@ class ExternalSyncService:
 
             payload = {
                 "placa": placa,
-                "marca": marca,
                 "modelo": modelo,
                 "activo": activo,
                 "perfil_id": perfil_id,
             }
+            # Solo incluir marca si tiene un valor (no None ni string vacío)
+            if marca and marca.strip():
+                payload["marca"] = marca
 
             logger.info(
                 f"[SYNC] Creando vehículo {placa} en API externa. "
