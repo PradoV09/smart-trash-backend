@@ -424,18 +424,25 @@ class APIExternaService:
         capacidad_m3: float | None,
         estado: EstadoVehiculo,
     ) -> tuple[str, dict[str, Any]]:
-        """Crea vehículo en API externa. Devuelve (id_externo_uuid, respuesta_json)."""
+        """Crea vehículo en API externa. Devuelve (id_externo_uuid, respuesta_json).
+
+        La API externa espera: {placa, marca, modelo, activo (bool), perfil_id}.
+        """
         self._validate_config()
         self._validate_perfil_id_config()
+        # La API externa usa "activo" (bool), NO "estado" (string).
         payload: dict[str, Any] = {
             "placa": placa,
             "perfil_id": self.perfil_id,
-            "estado": estado.value,
+            "activo": estado != EstadoVehiculo.inactivo,
         }
         if modelo is not None:
             payload["modelo"] = modelo
-        if capacidad_m3 is not None:
-            payload["capacidad_m3"] = capacidad_m3
+
+        logger.info(
+            f"[API_EXTERNA] Creando vehículo en API externa. "
+            f"URL: {self.api_base_url}/api/vehiculos | Payload: {payload}"
+        )
 
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
@@ -448,6 +455,11 @@ class APIExternaService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"No se pudo conectar con la API externa: {exc}",
             ) from exc
+
+        logger.info(
+            f"[API_EXTERNA] Respuesta crear vehículo: "
+            f"status={response.status_code}, body={response.text[:500]}"
+        )
 
         if response.is_error:
             self._raise_external_error(response)
@@ -475,37 +487,67 @@ class APIExternaService:
         return ext_id, raw
 
     async def listar_vehiculos_externos(self) -> list[dict[str, Any]]:
-        """Obtiene el catálogo de vehículos desde la API externa."""
+        """Obtiene el catálogo completo de vehículos desde la API externa.
+
+        La API externa retorna respuestas paginadas con campos:
+        {current_page, data: [...], last_page, ...}
+        Este método recorre TODAS las páginas para obtener la lista completa.
+        """
         self._validate_config()
         self._validate_perfil_id_config()
-        params: dict[str, str] = {}
-        if self.perfil_id:
-            params["perfil_id"] = self.perfil_id
-        try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                response = await client.get(
-                    f"{self.api_base_url}/api/vehiculos",
-                    params=params or None,
-                )
-        except httpx.RequestError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"No se pudo conectar con la API externa: {exc}",
-            ) from exc
 
-        if response.is_error:
-            self._raise_external_error(response)
-        try:
-            payload = response.json()
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=(
-                    "La URL base no devolvió JSON en /api/vehiculos "
-                    "(¿apunta al backend y no al visor SPA?)."
-                ),
-            )
-        return self._normalizar_lista_vehiculos(payload)
+        todos_los_vehiculos: list[dict[str, Any]] = []
+        pagina_actual = 1
+        max_paginas = 50  # Límite de seguridad
+
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            while pagina_actual <= max_paginas:
+                params: dict[str, str] = {"page": str(pagina_actual)}
+                if self.perfil_id:
+                    params["perfil_id"] = self.perfil_id
+                try:
+                    response = await client.get(
+                        f"{self.api_base_url}/api/vehiculos",
+                        params=params,
+                    )
+                except httpx.RequestError as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=f"No se pudo conectar con la API externa: {exc}",
+                    ) from exc
+
+                if response.is_error:
+                    self._raise_external_error(response)
+                try:
+                    payload = response.json()
+                except ValueError:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=(
+                            "La URL base no devolvió JSON en /api/vehiculos "
+                            "(¿apunta al backend y no al visor SPA?)."
+                        ),
+                    )
+
+                vehiculos_pagina = self._normalizar_lista_vehiculos(payload)
+                todos_los_vehiculos.extend(vehiculos_pagina)
+
+                # Detectar última página
+                if isinstance(payload, dict):
+                    last_page = payload.get("last_page", 1)
+                    if pagina_actual >= last_page:
+                        break
+                else:
+                    # Si no es paginado (lista directa), ya tenemos todo
+                    break
+
+                pagina_actual += 1
+
+        logger.info(
+            f"[API_EXTERNA] Listados {len(todos_los_vehiculos)} vehículos "
+            f"de la API externa ({pagina_actual} página(s))"
+        )
+        return todos_los_vehiculos
 
     async def subir_imagen_posicion(
         self,
