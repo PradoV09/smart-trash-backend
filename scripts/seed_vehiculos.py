@@ -38,7 +38,29 @@ async def seed_vehiculos():
             vehiculo = result.scalar_one_or_none()
             
             if vehiculo:
-                logger.info(f"Vehículo {placa} ya existe en la BD local. Omitiendo.")
+                if not vehiculo.id_externo:
+                    logger.info(f"Vehículo {placa} existe localmente sin id_externo. Sincronizando...")
+                    from services.external_sync_service import get_external_sync_service, SyncStatus
+                    sync_service = get_external_sync_service()
+                    if sync_service.es_sincronizacion_habilitada():
+                        try:
+                            metadata = await sync_service.sync_create_vehiculo(
+                                placa=vehiculo.placa,
+                                marca=None,
+                                modelo=vehiculo.modelo,
+                                activo=True,
+                                recurso_id_local=vehiculo.id_vehiculo,
+                            )
+                            if metadata.estado == SyncStatus.SUCCESS and metadata.id_externo:
+                                vehiculo.id_externo = metadata.id_externo
+                                await db.commit()
+                                logger.info(f"Vehículo {placa} sincronizado exitosamente. id_externo={metadata.id_externo}")
+                            else:
+                                logger.error(f"Fallo al sincronizar vehículo {placa} existente: {metadata.error_message}")
+                        except Exception as e:
+                            logger.error(f"Error sincronizando vehículo {placa} existente: {e}")
+                else:
+                    logger.info(f"Vehículo {placa} ya existe en la BD local con id_externo {vehiculo.id_externo}. Omitiendo.")
                 continue
             
             logger.info(f"Creando vehículo {placa}...")
