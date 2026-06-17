@@ -269,7 +269,8 @@ class ExternalSyncService:
         url = f"{self.api_base_url}{endpoint}"
 
         try:
-            async with httpx.AsyncClient(timeout=self.TIMEOUT_SEGUNDOS) as client:
+            headers = {"Accept": "application/json"}
+            async with httpx.AsyncClient(timeout=self.TIMEOUT_SEGUNDOS, headers=headers) as client:
                 if metodo == "GET":
                     response = await client.get(url, params=query_params)
                 elif metodo == "POST":
