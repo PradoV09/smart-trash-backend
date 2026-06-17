@@ -60,6 +60,7 @@ from routers.router_recorridos import router as recorridos_externos_router
 from routers.router_ws import router as ws_router
 from routers.router_tripulacion import router as tripulacion_router
 from scripts.seed_admin import seed_admin
+from scripts.seed_vehiculos import seed_vehiculos
 
 # ============================================================================
 # CONFIGURACIÓN DE LIFESPAN - Ciclo de vida de la aplicación
@@ -147,6 +148,13 @@ async def lifespan(app: FastAPI):
     # 5. Seeder de administrador por defecto (idempotente)
     await seed_admin()
     print("✅ Seeder de usuario admin ejecutado")
+
+    # 6. Seeder de vehículos requeridos
+    try:
+        await seed_vehiculos()
+        print("✅ Seeder de vehículos ejecutado")
+    except Exception as e:
+        print(f"⚠️ Error ejecutando seeder de vehículos: {e}")
 
     print("✅ Servidor listo y optimizado")
     print(f"📡 API disponible en: http://localhost:8000")
