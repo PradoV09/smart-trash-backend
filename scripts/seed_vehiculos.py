@@ -16,9 +16,9 @@ from services.service_vehiculo import VehiculoService
 logger = logging.getLogger(__name__)
 
 VEHICULOS_A_CREAR = [
-    {"placa": "IPY428", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
-    {"placa": "IPY429", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
-    {"placa": "IPY430", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY_428", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY_429", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY_430", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
 ]
 
 async def seed_vehiculos():
