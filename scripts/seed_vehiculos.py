@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from database import SessionLocal
+from database import SessionLocal, crear_tablas
 from models.model_vehiculo import Vehiculo, EstadoVehiculo
 from schemas.schema_vehiculo import VehiculoCreate
 from services.service_vehiculo import VehiculoService
@@ -16,12 +16,18 @@ from services.service_vehiculo import VehiculoService
 logger = logging.getLogger(__name__)
 
 VEHICULOS_A_CREAR = [
-    {"placa": "IPY_428", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
-    {"placa": "IPY_429", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
-    {"placa": "IPY_430", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY  428", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY  429", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
+    {"placa": "IPY  430", "modelo": "Default", "capacidad_m3": 10.0, "estado": EstadoVehiculo.disponible},
 ]
 
 async def seed_vehiculos():
+    # Inicializar mappers de SQLAlchemy para evitar InvalidRequestError
+    try:
+        await crear_tablas()
+    except Exception as e:
+        logger.warning(f"Error al verificar/crear tablas: {e}")
+
     async with SessionLocal() as db:
         service = VehiculoService(db)
         
